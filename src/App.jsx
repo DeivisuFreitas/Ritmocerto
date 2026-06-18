@@ -5,14 +5,12 @@ const SHEET_ID = "1Y9ZQeYjTBVdtawpBzKd63n416Nub-K42-hRNTCFsWvk";
 const CLIENT_EMAIL = "ritmocerto-app@emerald-surface-316302.iam.gserviceaccount.com";
 const PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCx7eY3q9nA6PNO\nZ+fu/DD0DL7N5KS4VVhgXPS229le6UErcZZPB6Jnp6H0BLfW2OVRxywXf4toE+qv\nghpdsfPNH/TyLXkQlFJFX6CQBlc03DOLW0O6eR+AwKCrKEH8PGGnhOQHcFVI46w4\nLJ53Q6CbW+tXNxj7wA45BwOO+NR1tpddpZudPkWP9F1jZiPeX9UtY2jXDiEa7Qbv\nyLoIlizfPKJV0eK1qjhCGZr5AgtSqtu8kGY1kZI/hmygnunKw4FcOp1T1gJZqOv4\nGsqx6DnNyQawdmd10QfiqDsQAat//QKJ2R7hKMxpue+qz4aPKFzxCocNxWSqs2W+\nVF6XNDb3AgMBAAECggEACND66U3wmj3GCzUxftwBfkuWC2mwPRoC07OHb1AcHeHS\nQtl7/dUpAkMszoSKqhtRMZN8PHsraIV5dCeEMERTCkTybtWQpsun+pwEaV6HD612\n4wmApPVqJDJnQ6kuVoCUw3zdjP4km69Rp0Q+uIt3TSYUK9wlDBm2GrPy7zCmhmE9\nRv54IZUBTxVaDpJri0oqnVk68fF2BhTo4bNOXs+ZgxacijSB2ksh/rxKDtizzVk5\nnddH1S0Cc9LLbFYyWRKwR4MJyIEdkAgMLjPTO/M4GcZE9yE2foVzmZac+BTFIywe\ns6NpNg+Uy1A6U9h0A7XzejH2D6bQ9PLNTyZOMqJ4gQKBgQDcLrr1xF1Ws15VGbsc\njO1qHMChFUyLOa261nyjM5eOyEE+NdJWSiGGqc0mo6ORFLxEtvr5XfrP0C9McDxs\nxWxPQQTu3KcErgQQvE010+YZfV30tXtb72b9rANrKV3QlNUBMfDgsatb2RcFr0Ct\nPCTaVxUnSpuAeIPaUXM4xTsn4QKBgQDO35O8mZBzxMdYViOHvDX8hof0IG4ToTaM\nscy9lTGtK/EsCTYmSxTxWwxuaQSAzrH4KpCdoXFDjUBgN9M4LXbVOWDHx/GZq9UW\nBiSbI5v0Frw1+dzoVWJAhuFCk2l5fAGmOv4XflBiaNLSHdDD3leccoiCsKW3wJQr\nQHKRpLjZ1wKBgQCgRrv9jxVKuYLfe72CyOtBpPBr0a9IYZIfQWa0/idC3m7vtAoK\nmifReOVHTTMRtwBdHL2QrGKYx7jGcaTqoMN45aGLpr9FXs7Cx++EUV1cDLBKI5lK\nkPhti7tpVFFgNhbfqdToGyzbzSk/EBWKhQ9miKFzWpHbcN66GzQ+jQPEwQKBgH1Z\n7iwmpOfxQZVeRJM30UKdxf2ANRMB6YrhJZ1urLYw3ScAweX8Msl4kRTJ36epFx+3\nsv9A1t/G1E45JWxx6AKVjPYhSl0CSNDakg3LSvFhYVQXfert6eYNlKsBpbSuFlXC\ngzp7GHw45h3ZYSl+LXon0F3YaeHo+B8pIwLrW/LrAoGBALhs37WGgw8o/JIc/z4d\nqkk7MIgw09VU6F3qdz5QaBv4Tkc0ocYFr0rhTItEJMsVfFTFhSSfpma/oJy5uI9g\nPZRZ4tVExLkPOFjDQraBHUjV9E8udrWY3vF50Y5W5cv7wn1H7WPnUFwGgiAsnDjy\nRivwV6CAnG7Y6EOCOJz1qNbE\n-----END PRIVATE KEY-----\n";
 
-const COR = "#0f0f0f";
 const CARD = "#1a1a1a";
 const BORDA = "#2e2e2e";
 const BRANCO = "#f5f5f5";
 const CINZA = "#a0a0a0";
 const DOURADO = "#c9a84c";
 const FUNDO = "#0f0f0f";
-const VERDE = "#4a7a1a";
 const VERMELHO = "#c06040";
 
 // ── GOOGLE AUTH ────────────────────────────────────────────
@@ -76,6 +74,13 @@ function TelaLogin({ onLogin }) {
   const handleLogin = async () => {
     if (!email || !senha) { setErro("Preencha email e senha"); return; }
     setLoading(true); setErro("");
+
+    // Login master — entra sem precisar de cadastro
+    if (email.toLowerCase() === "ritmocerto@mangalo" && senha === "Ritmocerto2021") {
+      onLogin({ id: "master", nome: "Admin", email: "ritmocerto@mangalo", nivel: "Avançado", vinculo: "Equipe", isAdmin: true });
+      setLoading(false); return;
+    }
+
     try {
       const token = await getAccessToken();
       const rows = await lerAba(token, "usuarios");
@@ -95,14 +100,12 @@ function TelaLogin({ onLogin }) {
     <div style={{ minHeight:"100vh", background:FUNDO, display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Inter',sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       <div style={{ width:"100%", maxWidth:380 }}>
-        {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:40 }}>
           <div style={{ width:64, height:64, background:DOURADO, borderRadius:18, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, margin:"0 auto 16px" }}>⚡</div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36, color:BRANCO, letterSpacing:4 }}>COFFEEMUSIC</div>
           <div style={{ fontSize:11, color:CINZA, letterSpacing:3, marginTop:4 }}>RUN CLUB</div>
         </div>
 
-        {/* Form */}
         <div style={{ background:CARD, border:`1px solid ${BORDA}`, borderRadius:16, padding:28 }}>
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:10, color:CINZA, letterSpacing:2, marginBottom:6 }}>EMAIL</div>
@@ -175,7 +178,6 @@ function TelaCadastro({ onVoltar, onCadastrado }) {
     <div style={{ minHeight:"100vh", background:FUNDO, padding:24, fontFamily:"'Inter',sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
 
-      {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
         <button onClick={onVoltar} style={{ background:"none", border:"none", color:CINZA, fontSize:24, cursor:"pointer" }}>←</button>
         <div>
@@ -184,7 +186,6 @@ function TelaCadastro({ onVoltar, onCadastrado }) {
         </div>
       </div>
 
-      {/* Barra de progresso */}
       <div style={{ display:"flex", gap:6, marginBottom:28 }}>
         {[1,2,3].map(n => (
           <div key={n} style={{ flex:1, height:3, borderRadius:2, background: n<=passo ? DOURADO : BORDA }} />
@@ -285,7 +286,6 @@ function TelaHome({ usuario, desafios, onRegistrar }) {
 
   return (
     <div style={{ padding:"20px 20px 100px", fontFamily:"'Inter',sans-serif" }}>
-      {/* Saudação */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <div>
           <div style={{ fontSize:12, color:CINZA }}>Bom dia, corredor 👋</div>
@@ -298,7 +298,6 @@ function TelaHome({ usuario, desafios, onRegistrar }) {
         </div>
       </div>
 
-      {/* Desafios ativos */}
       <div style={{ fontSize:10, color:CINZA, letterSpacing:2, marginBottom:12 }}>DESAFIOS ATIVOS</div>
 
       {desafiosAtivos.length === 0 ? (
@@ -327,7 +326,7 @@ function TelaHome({ usuario, desafios, onRegistrar }) {
 }
 
 // ── RANKING ─────────────────────────────────────────────────
-function TelaRanking({ atividades, usuarios }) {
+function TelaRanking({ atividades }) {
   const ranking = useMemo(() => {
     const map = {};
     for (const a of atividades) {
@@ -482,7 +481,7 @@ function NavInferior({ aba, setAba }) {
 
 // ── APP PRINCIPAL ───────────────────────────────────────────
 export default function App() {
-  const [tela, setTela] = useState("login"); // login | cadastro | app
+  const [tela, setTela] = useState("login");
   const [usuario, setUsuario] = useState(null);
   const [aba, setAba] = useState("home");
   const [desafios, setDesafios] = useState([]);
@@ -518,24 +517,17 @@ export default function App() {
   const CSS = `
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0f0f0f; }
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
     input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #2e2e2e; }
   `;
 
   if (tela === "login") return (
-    <>
-      <style>{CSS}</style>
-      <TelaLogin onLogin={handleLogin} />
-    </>
+    <><style>{CSS}</style><TelaLogin onLogin={handleLogin} /></>
   );
 
   if (tela === "cadastro") return (
-    <>
-      <style>{CSS}</style>
-      <TelaCadastro onVoltar={()=>setTela("login")} onCadastrado={user=>{ setUsuario(user); setTela("app"); }} />
-    </>
+    <><style>{CSS}</style><TelaCadastro onVoltar={()=>setTela("login")} onCadastrado={user=>{ setUsuario(user); setTela("app"); }} /></>
   );
 
   return (
