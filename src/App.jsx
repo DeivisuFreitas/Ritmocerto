@@ -12,6 +12,7 @@ const CARD="#1a1a1a",BORDA="#2e2e2e",BRANCO="#f5f5f5",CINZA="#a0a0a0",DOURADO="#
 const LOGINS_FIXOS=[
   {email:"ritmocerto@mangalo",senha:"Ritmocerto2021",usuario:{id:"master",nome:"Admin",email:"ritmocerto@mangalo",nivel:"Avançado",vinculo:"Equipe",isOrganizador:true,isAdmin:true}},
   {email:"pedrormiranda@live.com",senha:"cmrc2026@",usuario:{id:"pedro",nome:"Pedro Miranda",email:"pedrormiranda@live.com",nivel:"Avançado",vinculo:"Equipe",isOrganizador:true}},
+  {email:"deivisufreitas@icloud.com",senha:"Dryka2503",usuario:{id:"deivison",nome:"Deivison Freitas",email:"deivisufreitas@icloud.com",nivel:"Avançado",vinculo:"Equipe",isOrganizador:true}},
 ];
 
 async function getAccessToken(){
