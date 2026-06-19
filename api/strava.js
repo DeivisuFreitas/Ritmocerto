@@ -4,7 +4,6 @@ export default async function handler(req, res) {
   const CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 
   if (req.method === "GET" && code) {
-    // Trocar code por token
     const response = await fetch("https://www.strava.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,10 +24,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    // Buscar atividades do atleta
     const { access_token } = req.body;
+    // Busca todos os tipos de atividade (sem filtro de sport_type)
     const activitiesRes = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?per_page=30`,
+      `https://www.strava.com/api/v3/athlete/activities?per_page=30&page=1`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
     const activities = await activitiesRes.json();
