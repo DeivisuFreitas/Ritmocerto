@@ -44,10 +44,8 @@ async function escreverAba(token,aba,rows){
   await fetch(url,{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({values:rows})});
 }
 
-// ── STRAVA ─────────────────────────────────────────────────
 function usarStrava(){
   const [stravaToken,setStravaToken]=useState(()=>localStorage.getItem("strava_token")||null);
-  const [stravaAthlete,setStravaAthlete]=useState(()=>localStorage.getItem("strava_athlete")||null);
 
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
@@ -59,7 +57,6 @@ function usarStrava(){
       localStorage.setItem("strava_athlete",athlete||"");
       localStorage.setItem("strava_refresh",refresh||"");
       setStravaToken(token);
-      setStravaAthlete(athlete);
       window.history.replaceState({},"","/");
     }
   },[]);
@@ -74,38 +71,11 @@ function usarStrava(){
     localStorage.removeItem("strava_athlete");
     localStorage.removeItem("strava_refresh");
     setStravaToken(null);
-    setStravaAthlete(null);
   };
 
-  const sincronizarAtividades=async(usuario,desafiosAtivos)=>{
-    if(!stravaToken||desafiosAtivos.length===0)return;
-    try{
-      const res=await fetch("/api/strava",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:stravaToken})});
-      const atividades=await res.json();
-      if(!Array.isArray(atividades))return;
-      const token=await getAccessToken();
-      const jaRegistradas=await lerAba(token,"atividades");
-      const idsExistentes=new Set(jaRegistradas.slice(1).map(r=>r[0]));
-      const novas=[];
-      for(const ativ of atividades){
-        for(const desafio of desafiosAtivos){
-          const idAtiv=`strava_${ativ.id}_${desafio.id}`;
-          if(idsExistentes.has(idAtiv))continue;
-          const valor=desafio.tipo==="cal"?(ativ.calories||0).toFixed(0):desafio.tipo==="tempo"?Math.round((ativ.moving_time||0)/60):desafio.tipo==="dias"?1:((ativ.distance||0)/1000).toFixed(2);
-          novas.push([idAtiv,usuario.id,usuario.nome,desafio.id,desafio.nome,valor,new Date(ativ.start_date).toLocaleDateString("pt-BR"),"strava"]);
-        }
-      }
-      if(novas.length>0){
-        for(const row of novas) await escreverAba(token,"atividades",[row]);
-      }
-      return novas.length;
-    }catch(e){console.error("Erro Strava:",e);}
-  };
-
-  return{stravaToken,stravaAthlete,conectarStrava,desconectarStrava,sincronizarAtividades};
+  return{stravaToken,conectarStrava,desconectarStrava};
 }
 
-// ── LOGIN ───────────────────────────────────────────────────
 function TelaLogin({onLogin}){
   const [email,setEmail]=useState("");
   const [senha,setSenha]=useState("");
@@ -160,7 +130,6 @@ function TelaLogin({onLogin}){
   );
 }
 
-// ── CADASTRO ────────────────────────────────────────────────
 function TelaCadastro({onVoltar,onCadastrado}){
   const [passo,setPasso]=useState(1);
   const [form,setForm]=useState({nome:"",email:"",senha:"",telefone:"",sexo:"",cidade:"",idade:"",nivel:"Iniciante",vinculo:"Externo"});
@@ -250,19 +219,8 @@ function TelaCadastro({onVoltar,onCadastrado}){
   );
 }
 
-// ── HOME ────────────────────────────────────────────────────
-function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,sincronizarAtividades}){
-  const [sincronizando,setSincronizando]=useState(false);
-  const [sincMsg,setSincMsg]=useState("");
+function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,onSincronizar,sincMsg,sincronizando}){
   const ativos=desafios.filter(d=>d.ativo==="true"||d.ativo===true);
-
-  const handleSincronizar=async()=>{
-    setSincronizando(true);setSincMsg("");
-    const qtd=await sincronizarAtividades(usuario,ativos);
-    setSincMsg(qtd>0?`${qtd} atividade(s) importada(s)!`:"Nenhuma atividade nova.");
-    setSincronizando(false);
-  };
-
   return(
     <div style={{padding:"20px 20px 100px",fontFamily:"'Inter',sans-serif"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
@@ -273,9 +231,8 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,sincr
         <div style={{width:42,height:42,background:DOURADO,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#000"}}>{usuario.nome[0]}</div>
       </div>
 
-      {/* Banner Strava */}
       {!stravaToken?(
-        <div style={{background:"rgba(252,76,2,0.08)",border:`1px solid rgba(252,76,2,0.3)`,borderRadius:14,padding:16,marginBottom:20}}>
+        <div style={{background:"rgba(252,76,2,0.08)",border:"1px solid rgba(252,76,2,0.3)",borderRadius:14,padding:16,marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
             <div style={{width:32,height:32,background:STRAVA,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:14}}>S</div>
             <div>
@@ -286,17 +243,21 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,sincr
           <button onClick={conectarStrava} style={{width:"100%",background:STRAVA,color:"#fff",border:"none",borderRadius:10,padding:"11px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer"}}>CONECTAR STRAVA</button>
         </div>
       ):(
-        <div style={{background:"rgba(252,76,2,0.08)",border:`1px solid rgba(252,76,2,0.4)`,borderRadius:14,padding:14,marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:28,height:28,background:STRAVA,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:12}}>✓</div>
-            <div>
-              <div style={{fontSize:12,color:BRANCO,fontWeight:600}}>Strava conectado</div>
-              <div style={{fontSize:10,color:CINZA}}>{sincMsg||"Atividades sincronizando"}</div>
+        <div style={{background:"rgba(252,76,2,0.08)",border:"1px solid rgba(252,76,2,0.4)",borderRadius:14,padding:14,marginBottom:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:sincMsg?8:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:28,height:28,background:STRAVA,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:12}}>✓</div>
+              <div>
+                <div style={{fontSize:12,color:BRANCO,fontWeight:600}}>Strava conectado</div>
+                <div style={{fontSize:10,color:CINZA}}>Toque SYNC para importar atividades</div>
+              </div>
             </div>
+            <button onClick={onSincronizar} disabled={sincronizando}
+              style={{background:STRAVA,border:"none",borderRadius:8,padding:"8px 14px",color:"#fff",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,cursor:"pointer",opacity:sincronizando?0.6:1}}>
+              {sincronizando?"...":"SYNC"}
+            </button>
           </div>
-          <button onClick={handleSincronizar} disabled={sincronizando} style={{background:STRAVA,border:"none",borderRadius:8,padding:"7px 12px",color:"#fff",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,cursor:"pointer"}}>
-            {sincronizando?"...":"SYNC"}
-          </button>
+          {sincMsg&&<div style={{fontSize:11,color:CINZA,marginTop:6,padding:"6px 10px",background:"rgba(0,0,0,0.2)",borderRadius:8}}>{sincMsg}</div>}
         </div>
       )}
 
@@ -310,15 +271,12 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,sincr
         <div key={i} style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:16,overflow:"hidden",marginBottom:14}}>
           <div style={{background:DOURADO,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:10,fontWeight:700,color:"#000",letterSpacing:2}}>⚡ DESAFIO ATIVO</span>
-            <span style={{fontSize:9,color:"#000",background:"rgba(0,0,0,0.15)",borderRadius:20,padding:"2px 8px"}}>
-              {d.tipo==="km"?"📏 km":d.tipo==="cal"?"🔥 cal":d.tipo==="tempo"?"⏱️ tempo":"📅 dias"}
-            </span>
+            <span style={{fontSize:9,color:"#000",background:"rgba(0,0,0,0.15)",borderRadius:20,padding:"2px 8px"}}>{d.tipo==="km"?"📏 km":d.tipo==="cal"?"🔥 cal":d.tipo==="tempo"?"⏱️ tempo":"📅 dias"}</span>
           </div>
           <div style={{padding:"14px 16px"}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:BRANCO,letterSpacing:1,marginBottom:4}}>{d.nome}</div>
             <div style={{fontSize:12,color:CINZA,marginBottom:14}}>{d.descricao}</div>
-            {!stravaToken&&<button onClick={()=>onRegistrar(d)} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:"12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer"}}>REGISTRAR MANUAL</button>}
-            {stravaToken&&<div style={{fontSize:11,color:STRAVA,textAlign:"center"}}>✓ Strava sincronizando automaticamente</div>}
+            <button onClick={()=>onRegistrar(d)} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:"12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer"}}>REGISTRAR ATIVIDADE</button>
           </div>
         </div>
       ))}
@@ -326,7 +284,6 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,sincr
   );
 }
 
-// ── RANKING ─────────────────────────────────────────────────
 function TelaRanking({atividades}){
   const ranking=useMemo(()=>{
     const map={};
@@ -357,7 +314,6 @@ function TelaRanking({atividades}){
   );
 }
 
-// ── PERFIL ───────────────────────────────────────────────────
 function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,desconectarStrava}){
   const minhas=atividades.filter(a=>a.usuario_id===usuario.id);
   const totalKm=minhas.reduce((a,r)=>a+(parseFloat(r.km)||0),0);
@@ -379,8 +335,6 @@ function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,descon
           <div style={{fontSize:11,color:CINZA,letterSpacing:1}}>ATIVIDADES</div>
         </div>
       </div>
-
-      {/* Strava no perfil */}
       <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,padding:16,marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
           <div style={{width:32,height:32,background:STRAVA,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:14}}>S</div>
@@ -395,7 +349,6 @@ function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,descon
           <button onClick={desconectarStrava} style={{width:"100%",background:"transparent",color:CINZA,border:`1px solid ${BORDA}`,borderRadius:10,padding:"11px",fontSize:12,cursor:"pointer"}}>Desconectar Strava</button>
         )}
       </div>
-
       <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:12}}>HISTÓRICO</div>
       {minhas.length===0?(
         <div style={{textAlign:"center",padding:32,color:CINZA,fontSize:13}}>Nenhuma atividade ainda</div>
@@ -403,7 +356,7 @@ function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,descon
         <div key={i} style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{fontSize:13,color:BRANCO,fontWeight:500}}>{a.desafio_nome||"Atividade"}</div>
-            <div style={{fontSize:10,color:CINZA,marginTop:2}}>{a.data} {a.fonte==="strava"&&<span style={{color:STRAVA}}>· Strava</span>}</div>
+            <div style={{fontSize:10,color:CINZA,marginTop:2}}>{a.data}{a.fonte==="strava"&&<span style={{color:STRAVA}}> · Strava</span>}</div>
           </div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:DOURADO}}>{a.km}</div>
         </div>
@@ -413,7 +366,6 @@ function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,descon
   );
 }
 
-// ── REGISTRAR MANUAL ────────────────────────────────────────
 function ModalRegistrar({desafio,usuario,onSalvar,onFechar}){
   const [val,setVal]=useState("");
   const [loading,setLoading]=useState(false);
@@ -427,13 +379,12 @@ function ModalRegistrar({desafio,usuario,onSalvar,onFechar}){
     }catch(e){alert("Erro ao salvar");}
     setLoading(false);
   };
-  const label=desafio.tipo==="cal"?"CALORIAS":desafio.tipo==="tempo"?"MINUTOS":desafio.tipo==="dias"?"DIAS":"KM";
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"flex-end",zIndex:999}}>
       <div style={{background:CARD,borderRadius:"20px 20px 0 0",padding:28,width:"100%",border:`1px solid ${BORDA}`}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:BRANCO,letterSpacing:2,marginBottom:4}}>REGISTRAR</div>
         <div style={{fontSize:13,color:CINZA,marginBottom:24}}>{desafio.nome}</div>
-        <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:8}}>{label}</div>
+        <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:8}}>{desafio.tipo==="cal"?"CALORIAS":desafio.tipo==="tempo"?"MINUTOS":desafio.tipo==="dias"?"DIAS":"KM"}</div>
         <input type="number" value={val} onChange={e=>setVal(e.target.value)} placeholder="0"
           style={{width:"100%",background:"#111",border:`1px solid ${BORDA}`,borderRadius:10,padding:"16px",color:BRANCO,fontSize:24,textAlign:"center",outline:"none",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,marginBottom:20}}/>
         <div style={{display:"flex",gap:10}}>
@@ -447,7 +398,6 @@ function ModalRegistrar({desafio,usuario,onSalvar,onFechar}){
   );
 }
 
-// ── PAINEL ORGANIZADOR ──────────────────────────────────────
 function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,onEditarDesafio}){
   const [abaP,setAbaP]=useState("desafios");
   const totalKm=atividades.reduce((a,r)=>a+(parseFloat(r.km)||0),0);
@@ -568,7 +518,6 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
   );
 }
 
-// ── CRIAR/EDITAR DESAFIO ────────────────────────────────────
 function TelaDesafio({desafioEditando,onSalvar,onVoltar}){
   const [form,setForm]=useState(desafioEditando||{nome:"",descricao:"",tipo:"km",meta:"",inicio:"",fim:"",ativo:"true"});
   const [loading,setLoading]=useState(false);
@@ -622,7 +571,6 @@ function TelaDesafio({desafioEditando,onSalvar,onVoltar}){
   );
 }
 
-// ── NAV ─────────────────────────────────────────────────────
 function NavInferior({aba,setAba,isOrganizador}){
   const itens=[{id:"home",icon:"🏠",label:"Home"},{id:"ranking",icon:"🏆",label:"Ranking"},...(isOrganizador?[{id:"painel",icon:"📊",label:"Painel"}]:[]),{id:"perfil",icon:"👤",label:"Perfil"}];
   return(
@@ -637,7 +585,6 @@ function NavInferior({aba,setAba,isOrganizador}){
   );
 }
 
-// ── APP PRINCIPAL ───────────────────────────────────────────
 export default function App(){
   const [tela,setTela]=useState("login");
   const [usuario,setUsuario]=useState(null);
@@ -648,7 +595,9 @@ export default function App(){
   const [modalDesafio,setModalDesafio]=useState(null);
   const [telaDesafio,setTelaDesafio]=useState(null);
   const [loading,setLoading]=useState(false);
-  const {stravaToken,stravaAthlete,conectarStrava,desconectarStrava,sincronizarAtividades}=usarStrava();
+  const [sincMsg,setSincMsg]=useState("");
+  const [sincronizando,setSincronizando]=useState(false);
+  const {stravaToken,conectarStrava,desconectarStrava}=usarStrava();
 
   const carregarDados=async()=>{
     setLoading(true);
@@ -663,6 +612,54 @@ export default function App(){
   };
 
   useEffect(()=>{if(tela==="app")carregarDados();},[tela]);
+
+  const handleSincronizar=async()=>{
+    if(!stravaToken||!usuario)return;
+    setSincronizando(true);
+    setSincMsg("Buscando atividades...");
+    try{
+      const res=await fetch("/api/strava",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({access_token:stravaToken})
+      });
+      const data=await res.json();
+      if(Array.isArray(data)&&data.length>0){
+        const desafiosAtivos=desafios.filter(d=>d.ativo==="true");
+        if(desafiosAtivos.length===0){
+          setSincMsg(`${data.length} atividade(s) encontrada(s), mas não há desafios ativos.`);
+          setSincronizando(false);
+          return;
+        }
+        const token=await getAccessToken();
+        const jaRegistradas=await lerAba(token,"atividades");
+        const idsExistentes=new Set(jaRegistradas.slice(1).map(r=>r[0]));
+        let novas=0;
+        for(const ativ of data){
+          for(const desafio of desafiosAtivos){
+            const idAtiv=`strava_${ativ.id}_${desafio.id}`;
+            if(idsExistentes.has(idAtiv))continue;
+            const km=((ativ.distance||0)/1000).toFixed(2);
+            const cal=Math.round((ativ.kilojoules||0)*0.239);
+            const tempo=Math.round((ativ.moving_time||0)/60);
+            const valor=desafio.tipo==="cal"?cal:desafio.tipo==="tempo"?tempo:km;
+            const data2=new Date(ativ.start_date).toLocaleDateString("pt-BR");
+            await escreverAba(token,"atividades",[[idAtiv,usuario.id,usuario.nome,desafio.id,desafio.nome,valor,data2,"strava"]]);
+            novas++;
+          }
+        }
+        setSincMsg(novas>0?`✓ ${novas} atividade(s) importada(s)!`:"Nenhuma atividade nova.");
+        if(novas>0)await carregarDados();
+      } else if(Array.isArray(data)&&data.length===0){
+        setSincMsg("Nenhuma atividade encontrada no Strava.");
+      } else {
+        setSincMsg("Erro: "+JSON.stringify(data).slice(0,80));
+      }
+    }catch(e){
+      setSincMsg("Erro: "+e.message);
+    }
+    setSincronizando(false);
+  };
 
   const handleLogin=(user,destino)=>{
     if(destino==="cadastro"){setTela("cadastro");return;}
@@ -682,7 +679,7 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",color:CINZA,fontSize:13}}>Carregando...</div>
       ):(
         <>
-          {aba==="home"&&<TelaHome usuario={usuario} desafios={desafios} onRegistrar={setModalDesafio} stravaToken={stravaToken} conectarStrava={conectarStrava} sincronizarAtividades={sincronizarAtividades}/>}
+          {aba==="home"&&<TelaHome usuario={usuario} desafios={desafios} onRegistrar={setModalDesafio} stravaToken={stravaToken} conectarStrava={conectarStrava} onSincronizar={handleSincronizar} sincMsg={sincMsg} sincronizando={sincronizando}/>}
           {aba==="ranking"&&<TelaRanking atividades={atividades}/>}
           {aba==="painel"&&usuario?.isOrganizador&&<PainelOrganizador usuario={usuario} desafios={desafios} atividades={atividades} usuarios={usuarios} onCriarDesafio={()=>setTelaDesafio("criar")} onEditarDesafio={d=>setTelaDesafio(d)}/>}
           {aba==="perfil"&&<TelaPerfil usuario={usuario} atividades={atividades} onSair={()=>{setUsuario(null);setTela("login");}} stravaToken={stravaToken} conectarStrava={conectarStrava} desconectarStrava={desconectarStrava}/>}
