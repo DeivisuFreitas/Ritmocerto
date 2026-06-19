@@ -4,9 +4,8 @@ const SHEET_ID = "1Y9ZQeYjTBVdtawpBzKd63n416Nub-K42-hRNTCFsWvk";
 const CLIENT_EMAIL = "ritmocerto-app@emerald-surface-316302.iam.gserviceaccount.com";
 const PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCx7eY3q9nA6PNO\nZ+fu/DD0DL7N5KS4VVhgXPS229le6UErcZZPB6Jnp6H0BLfW2OVRxywXf4toE+qv\nghpdsfPNH/TyLXkQlFJFX6CQBlc03DOLW0O6eR+AwKCrKEH8PGGnhOQHcFVI46w4\nLJ53Q6CbW+tXNxj7wA45BwOO+NR1tpddpZudPkWP9F1jZiPeX9UtY2jXDiEa7Qbv\nyLoIlizfPKJV0eK1qjhCGZr5AgtSqtu8kGY1kZI/hmygnunKw4FcOp1T1gJZqOv4\nGsqx6DnNyQawdmd10QfiqDsQAat//QKJ2R7hKMxpue+qz4aPKFzxCocNxWSqs2W+\nVF6XNDb3AgMBAAECggEACND66U3wmj3GCzUxftwBfkuWC2mwPRoC07OHb1AcHeHS\nQtl7/dUpAkMszoSKqhtRMZN8PHsraIV5dCeEMERTCkTybtWQpsun+pwEaV6HD612\n4wmApPVqJDJnQ6kuVoCUw3zdjP4km69Rp0Q+uIt3TSYUK9wlDBm2GrPy7zCmhmE9\nRv54IZUBTxVaDpJri0oqnVk68fF2BhTo4bNOXs+ZgxacijSB2ksh/rxKDtizzVk5\nnddH1S0Cc9LLbFYyWRKwR4MJyIEdkAgMLjPTO/M4GcZE9yE2foVzmZac+BTFIywe\ns6NpNg+Uy1A6U9h0A7XzejH2D6bQ9PLNTyZOMqJ4gQKBgQDcLrr1xF1Ws15VGbsc\njO1qHMChFUyLOa261nyjM5eOyEE+NdJWSiGGqc0mo6ORFLxEtvr5XfrP0C9McDxs\nxWxPQQTu3KcErgQQvE010+YZfV30tXtb72b9rANrKV3QlNUBMfDgsatb2RcFr0Ct\nPCTaVxUnSpuAeIPaUXM4xTsn4QKBgQDO35O8mZBzxMdYViOHvDX8hof0IG4ToTaM\nscy9lTGtK/EsCTYmSxTxWwxuaQSAzrH4KpCdoXFDjUBgN9M4LXbVOWDHx/GZq9UW\nBiSbI5v0Frw1+dzoVWJAhuFCk2l5fAGmOv4XflBiaNLSHdDD3leccoiCsKW3wJQr\nQHKRpLjZ1wKBgQCgRrv9jxVKuYLfe72CyOtBpPBr0a9IYZIfQWa0/idC3m7vtAoK\nmifReOVHTTMRtwBdHL2QrGKYx7jGcaTqoMN45aGLpr9FXs7Cx++EUV1cDLBKI5lK\nkPhti7tpVFFgNhbfqdToGyzbzSk/EBWKhQ9miKFzWpHbcN66GzQ+jqPEwQKBgH1Z\n7iwmpOfxQZVeRJM30UKdxf2ANRMB6YrhJZ1urLYw3ScAweX8Msl4kRTJ36epFx+3\nsv9A1t/G1E45JWxx6AKVjPYhSl0CSNDakg3LSvFhYVQXfert6eYNlKsBpbSuFlXC\ngzp7GHw45h3ZYSl+LXon0F3YaeHo+B8pIwLrW/LrAoGBALhs37WGgw8o/JIc/z4d\nqkk7MIgw09VU6F3qdz5QaBv4Tkc0ocYFr0rhTItEJMsVfFTFhSSfpma/oJy5uI9g\nPZRZ4tVExLkPOFjDQraBHUjV9E8udrWY3vF50Y5W5cv7wn1H7WPnUFwGgiAsnDjy\nRivwV6CAnG7Y6EOCOJz1qNbE\n-----END PRIVATE KEY-----\n";
 
-const STRAVA_CLIENT_ID = "259363";
-const STRAVA_REDIRECT = "https://ritmocerto.vercel.app/api/strava";
-
+const STRAVA_CLIENT_ID="259363";
+const STRAVA_REDIRECT="https://ritmocerto.vercel.app/api/strava";
 const CARD="#1a1a1a",BORDA="#2e2e2e",BRANCO="#f5f5f5",CINZA="#a0a0a0",DOURADO="#c9a84c",FUNDO="#0f0f0f",VERMELHO="#c06040",VERDE="#4a7a1a",STRAVA="#FC4C02";
 
 const LOGINS_FIXOS=[
@@ -29,6 +28,7 @@ async function getAccessToken(){
   const jwt=`${sigInput}.${sig64}`;
   const res=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`});
   const data=await res.json();
+  if(!data.access_token)throw new Error("Token inválido: "+JSON.stringify(data));
   return data.access_token;
 }
 
@@ -36,17 +36,20 @@ async function lerAba(token,aba){
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(aba)}!A1:Z1000`;
   const res=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
   const data=await res.json();
+  if(data.error)throw new Error(data.error.message);
   return data.values||[];
 }
 
 async function escreverAba(token,aba,rows){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(aba)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-  await fetch(url,{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({values:rows})});
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(aba)}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const res=await fetch(url,{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({values:rows})});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error.message);
+  return data;
 }
 
 function usarStrava(){
   const [stravaToken,setStravaToken]=useState(()=>localStorage.getItem("strava_token")||null);
-
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const token=params.get("strava_token");
@@ -60,19 +63,8 @@ function usarStrava(){
       window.history.replaceState({},"","/");
     }
   },[]);
-
-  const conectarStrava=()=>{
-    const url=`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=activity:read_all`;
-    window.location.href=url;
-  };
-
-  const desconectarStrava=()=>{
-    localStorage.removeItem("strava_token");
-    localStorage.removeItem("strava_athlete");
-    localStorage.removeItem("strava_refresh");
-    setStravaToken(null);
-  };
-
+  const conectarStrava=()=>{window.location.href=`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=activity:read_all`;};
+  const desconectarStrava=()=>{localStorage.removeItem("strava_token");localStorage.removeItem("strava_athlete");localStorage.removeItem("strava_refresh");setStravaToken(null);};
   return{stravaToken,conectarStrava,desconectarStrava};
 }
 
@@ -81,7 +73,6 @@ function TelaLogin({onLogin}){
   const [senha,setSenha]=useState("");
   const [erro,setErro]=useState("");
   const [loading,setLoading]=useState(false);
-
   const handleLogin=async()=>{
     if(!email||!senha){setErro("Preencha email e senha");return;}
     setLoading(true);setErro("");
@@ -93,10 +84,9 @@ function TelaLogin({onLogin}){
       const u=rows.slice(1).find(r=>r[2]?.toLowerCase()===email.toLowerCase()&&r[3]===senha);
       if(u)onLogin({id:u[0],nome:u[1],email:u[2],nivel:u[5]||"Iniciante",vinculo:u[7]||"Externo",isOrganizador:false});
       else setErro("Email ou senha incorretos");
-    }catch(e){setErro("Erro ao conectar.");}
+    }catch(e){setErro("Erro: "+e.message);}
     setLoading(false);
   };
-
   return(
     <div style={{minHeight:"100vh",background:FUNDO,display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Inter',sans-serif"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');*{box-sizing:border-box;margin:0;padding:0;}`}</style>
@@ -116,9 +106,7 @@ function TelaLogin({onLogin}){
             <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={{width:"100%",background:"#111",border:`1px solid ${BORDA}`,borderRadius:10,padding:"13px 14px",color:BRANCO,fontSize:14,outline:"none",fontFamily:"Inter"}}/>
           </div>
           {erro&&<div style={{color:VERMELHO,fontSize:12,marginBottom:14,textAlign:"center"}}>{erro}</div>}
-          <button onClick={handleLogin} disabled={loading} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer"}}>
-            {loading?"ENTRANDO...":"ENTRAR"}
-          </button>
+          <button onClick={handleLogin} disabled={loading} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer"}}>{loading?"ENTRANDO...":"ENTRAR"}</button>
         </div>
         <div style={{textAlign:"center",marginTop:20}}>
           <span style={{fontSize:12,color:CINZA}}>Não tem conta? </span>
@@ -136,7 +124,6 @@ function TelaCadastro({onVoltar,onCadastrado}){
   const [erro,setErro]=useState("");
   const [loading,setLoading]=useState(false);
   const set=(k,v)=>setForm(p=>({...p,[k]:v}));
-
   const cadastrar=async()=>{
     setLoading(true);setErro("");
     try{
@@ -144,26 +131,19 @@ function TelaCadastro({onVoltar,onCadastrado}){
       const id=Date.now().toString();
       await escreverAba(token,"usuarios",[[id,form.nome,form.email,form.senha,form.telefone,form.nivel,form.sexo,form.vinculo,form.cidade,form.idade,new Date().toLocaleDateString("pt-BR")]]);
       onCadastrado({id,nome:form.nome,email:form.email,nivel:form.nivel,vinculo:form.vinculo,isOrganizador:false});
-    }catch(e){setErro("Erro ao cadastrar.");}
+    }catch(e){setErro("Erro: "+e.message);}
     setLoading(false);
   };
-
   const iS={width:"100%",background:"#111",border:`1px solid ${BORDA}`,borderRadius:10,padding:"13px 14px",color:BRANCO,fontSize:14,outline:"none",fontFamily:"Inter",marginBottom:14};
   const lS={fontSize:10,color:CINZA,letterSpacing:2,marginBottom:6,display:"block"};
-
   return(
     <div style={{minHeight:"100vh",background:FUNDO,padding:24,fontFamily:"'Inter',sans-serif"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');*{box-sizing:border-box;margin:0;padding:0;}`}</style>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:28}}>
         <button onClick={onVoltar} style={{background:"none",border:"none",color:CINZA,fontSize:24,cursor:"pointer"}}>←</button>
-        <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:BRANCO,letterSpacing:2}}>CRIAR CONTA</div>
-          <div style={{fontSize:11,color:CINZA}}>Passo {passo} de 3</div>
-        </div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:BRANCO,letterSpacing:2}}>CRIAR CONTA</div><div style={{fontSize:11,color:CINZA}}>Passo {passo} de 3</div></div>
       </div>
-      <div style={{display:"flex",gap:6,marginBottom:28}}>
-        {[1,2,3].map(n=><div key={n} style={{flex:1,height:3,borderRadius:2,background:n<=passo?DOURADO:BORDA}}/>)}
-      </div>
+      <div style={{display:"flex",gap:6,marginBottom:28}}>{[1,2,3].map(n=><div key={n} style={{flex:1,height:3,borderRadius:2,background:n<=passo?DOURADO:BORDA}}/>)}</div>
       {passo===1&&<div>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:BRANCO,letterSpacing:1,marginBottom:4}}>QUEM É VOCÊ?</div>
         <div style={{fontSize:12,color:CINZA,marginBottom:20}}>Dados pessoais</div>
@@ -173,9 +153,7 @@ function TelaCadastro({onVoltar,onCadastrado}){
         <label style={lS}>TELEFONE</label><input value={form.telefone} onChange={e=>set("telefone",e.target.value)} placeholder="(xx) 9xxxx-xxxx" style={iS}/>
         <label style={lS}>SEXO</label>
         <div style={{display:"flex",gap:10,marginBottom:20}}>
-          {["Masculino","Feminino","Outro"].map(s=>(
-            <button key={s} onClick={()=>set("sexo",s)} style={{flex:1,padding:"11px 6px",borderRadius:10,border:`1px solid ${form.sexo===s?DOURADO:BORDA}`,background:form.sexo===s?"rgba(201,168,76,0.1)":"transparent",color:form.sexo===s?DOURADO:CINZA,fontSize:12,cursor:"pointer"}}>{s}</button>
-          ))}
+          {["Masculino","Feminino","Outro"].map(s=><button key={s} onClick={()=>set("sexo",s)} style={{flex:1,padding:"11px 6px",borderRadius:10,border:`1px solid ${form.sexo===s?DOURADO:BORDA}`,background:form.sexo===s?"rgba(201,168,76,0.1)":"transparent",color:form.sexo===s?DOURADO:CINZA,fontSize:12,cursor:"pointer"}}>{s}</button>)}
         </div>
         <button onClick={()=>{if(!form.nome||!form.email||!form.senha){setErro("Preencha todos os campos");return;}setErro("");setPasso(2);}} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer"}}>CONTINUAR →</button>
         {erro&&<div style={{color:VERMELHO,fontSize:12,marginTop:10,textAlign:"center"}}>{erro}</div>}
@@ -187,15 +165,11 @@ function TelaCadastro({onVoltar,onCadastrado}){
         <label style={lS}>IDADE</label><input type="number" value={form.idade} onChange={e=>set("idade",e.target.value)} placeholder="Sua idade" style={iS}/>
         <label style={lS}>NÍVEL</label>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-          {[["Iniciante","🟢","até 5km"],["Intermediário","🟡","5 a 21km"],["Avançado","🔴","21km+"]].map(([n,e,d])=>(
-            <button key={n} onClick={()=>set("nivel",n)} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${form.nivel===n?DOURADO:BORDA}`,background:form.nivel===n?"rgba(201,168,76,0.1)":"transparent",color:BRANCO,fontSize:13,cursor:"pointer",textAlign:"left"}}>{e} <strong>{n}</strong> — {d}</button>
-          ))}
+          {[["Iniciante","🟢","até 5km"],["Intermediário","🟡","5 a 21km"],["Avançado","🔴","21km+"]].map(([n,e,d])=><button key={n} onClick={()=>set("nivel",n)} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${form.nivel===n?DOURADO:BORDA}`,background:form.nivel===n?"rgba(201,168,76,0.1)":"transparent",color:BRANCO,fontSize:13,cursor:"pointer",textAlign:"left"}}>{e} <strong>{n}</strong> — {d}</button>)}
         </div>
         <label style={lS}>VÍNCULO COM O MANGALÔ</label>
         <div style={{display:"flex",gap:10,marginBottom:20}}>
-          {["Cliente","Equipe","Externo"].map(v=>(
-            <button key={v} onClick={()=>set("vinculo",v)} style={{flex:1,padding:"11px 6px",borderRadius:10,border:`1px solid ${form.vinculo===v?DOURADO:BORDA}`,background:form.vinculo===v?"rgba(201,168,76,0.1)":"transparent",color:form.vinculo===v?DOURADO:CINZA,fontSize:12,cursor:"pointer"}}>{v}</button>
-          ))}
+          {["Cliente","Equipe","Externo"].map(v=><button key={v} onClick={()=>set("vinculo",v)} style={{flex:1,padding:"11px 6px",borderRadius:10,border:`1px solid ${form.vinculo===v?DOURADO:BORDA}`,background:form.vinculo===v?"rgba(201,168,76,0.1)":"transparent",color:form.vinculo===v?DOURADO:CINZA,fontSize:12,cursor:"pointer"}}>{v}</button>)}
         </div>
         <button onClick={()=>setPasso(3)} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer"}}>CONTINUAR →</button>
       </div>}
@@ -211,9 +185,7 @@ function TelaCadastro({onVoltar,onCadastrado}){
           ))}
         </div>
         {erro&&<div style={{color:VERMELHO,fontSize:12,marginBottom:14}}>{erro}</div>}
-        <button onClick={cadastrar} disabled={loading} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer"}}>
-          {loading?"CADASTRANDO...":"ENTRAR NO GRUPO ⚡"}
-        </button>
+        <button onClick={cadastrar} disabled={loading} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer"}}>{loading?"CADASTRANDO...":"ENTRAR NO GRUPO ⚡"}</button>
       </div>}
     </div>
   );
@@ -230,15 +202,11 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,onSin
         </div>
         <div style={{width:42,height:42,background:DOURADO,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#000"}}>{usuario.nome[0]}</div>
       </div>
-
       {!stravaToken?(
         <div style={{background:"rgba(252,76,2,0.08)",border:"1px solid rgba(252,76,2,0.3)",borderRadius:14,padding:16,marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
             <div style={{width:32,height:32,background:STRAVA,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:14}}>S</div>
-            <div>
-              <div style={{fontSize:13,color:BRANCO,fontWeight:600}}>Conecte o Strava</div>
-              <div style={{fontSize:10,color:CINZA}}>Suas corridas entram automaticamente</div>
-            </div>
+            <div><div style={{fontSize:13,color:BRANCO,fontWeight:600}}>Conecte o Strava</div><div style={{fontSize:10,color:CINZA}}>Suas atividades entram automaticamente</div></div>
           </div>
           <button onClick={conectarStrava} style={{width:"100%",background:STRAVA,color:"#fff",border:"none",borderRadius:10,padding:"11px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer"}}>CONECTAR STRAVA</button>
         </div>
@@ -247,20 +215,13 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,onSin
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:sincMsg?8:0}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:28,height:28,background:STRAVA,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:12}}>✓</div>
-              <div>
-                <div style={{fontSize:12,color:BRANCO,fontWeight:600}}>Strava conectado</div>
-                <div style={{fontSize:10,color:CINZA}}>Toque SYNC para importar atividades</div>
-              </div>
+              <div><div style={{fontSize:12,color:BRANCO,fontWeight:600}}>Strava conectado</div><div style={{fontSize:10,color:CINZA}}>Toque SYNC para importar</div></div>
             </div>
-            <button onClick={onSincronizar} disabled={sincronizando}
-              style={{background:STRAVA,border:"none",borderRadius:8,padding:"8px 14px",color:"#fff",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,cursor:"pointer",opacity:sincronizando?0.6:1}}>
-              {sincronizando?"...":"SYNC"}
-            </button>
+            <button onClick={onSincronizar} disabled={sincronizando} style={{background:STRAVA,border:"none",borderRadius:8,padding:"8px 14px",color:"#fff",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,cursor:"pointer",opacity:sincronizando?0.6:1}}>{sincronizando?"...":"SYNC"}</button>
           </div>
           {sincMsg&&<div style={{fontSize:11,color:CINZA,marginTop:6,padding:"6px 10px",background:"rgba(0,0,0,0.2)",borderRadius:8}}>{sincMsg}</div>}
         </div>
       )}
-
       <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:12}}>DESAFIOS ATIVOS</div>
       {ativos.length===0?(
         <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:16,padding:24,textAlign:"center"}}>
@@ -285,26 +246,17 @@ function TelaHome({usuario,desafios,onRegistrar,stravaToken,conectarStrava,onSin
 }
 
 function TelaRanking({atividades}){
-  const ranking=useMemo(()=>{
-    const map={};
-    for(const a of atividades){if(!map[a.usuario_id])map[a.usuario_id]={nome:a.usuario_nome,total:0};map[a.usuario_id].total+=parseFloat(a.km)||0;}
-    return Object.values(map).sort((a,b)=>b.total-a.total);
-  },[atividades]);
+  const ranking=useMemo(()=>{const map={};for(const a of atividades){if(!map[a.usuario_id])map[a.usuario_id]={nome:a.usuario_nome,total:0};map[a.usuario_id].total+=parseFloat(a.km)||0;}return Object.values(map).sort((a,b)=>b.total-a.total);},[atividades]);
   return(
     <div style={{padding:"20px 20px 100px",fontFamily:"'Inter',sans-serif"}}>
       <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:BRANCO,letterSpacing:2,marginBottom:4}}>RANKING</div>
       <div style={{fontSize:11,color:CINZA,letterSpacing:2,marginBottom:20}}>TOP CORREDORES</div>
-      {ranking.length===0?(
-        <div style={{textAlign:"center",padding:40,color:CINZA}}>Nenhuma atividade ainda</div>
-      ):(
+      {ranking.length===0?<div style={{textAlign:"center",padding:40,color:CINZA}}>Nenhuma atividade ainda</div>:(
         <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:16,overflow:"hidden"}}>
           {ranking.map((r,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12,borderBottom:`1px solid ${BORDA}`}}>
               <div style={{fontSize:20,width:28}}>{"🥇🥈🥉"[i]||`#${i+1}`}</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,color:BRANCO,fontWeight:600}}>{r.nome}</div>
-                <div style={{fontSize:11,color:CINZA}}>{r.total.toFixed(1)} km</div>
-              </div>
+              <div style={{flex:1}}><div style={{fontSize:13,color:BRANCO,fontWeight:600}}>{r.nome}</div><div style={{fontSize:11,color:CINZA}}>{r.total.toFixed(1)} km</div></div>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:DOURADO}}>{r.total.toFixed(0)}</div>
             </div>
           ))}
@@ -338,21 +290,14 @@ function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,descon
       <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,padding:16,marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
           <div style={{width:32,height:32,background:STRAVA,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:14}}>S</div>
-          <div>
-            <div style={{fontSize:13,color:BRANCO,fontWeight:600}}>Strava</div>
-            <div style={{fontSize:10,color:stravaToken?STRAVA:CINZA}}>{stravaToken?"Conectado ✓":"Não conectado"}</div>
-          </div>
+          <div><div style={{fontSize:13,color:BRANCO,fontWeight:600}}>Strava</div><div style={{fontSize:10,color:stravaToken?STRAVA:CINZA}}>{stravaToken?"Conectado ✓":"Não conectado"}</div></div>
         </div>
-        {!stravaToken?(
-          <button onClick={conectarStrava} style={{width:"100%",background:STRAVA,color:"#fff",border:"none",borderRadius:10,padding:"11px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer"}}>CONECTAR STRAVA</button>
-        ):(
-          <button onClick={desconectarStrava} style={{width:"100%",background:"transparent",color:CINZA,border:`1px solid ${BORDA}`,borderRadius:10,padding:"11px",fontSize:12,cursor:"pointer"}}>Desconectar Strava</button>
-        )}
+        {!stravaToken?<button onClick={conectarStrava} style={{width:"100%",background:STRAVA,color:"#fff",border:"none",borderRadius:10,padding:"11px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,cursor:"pointer"}}>CONECTAR STRAVA</button>
+        :<button onClick={desconectarStrava} style={{width:"100%",background:"transparent",color:CINZA,border:`1px solid ${BORDA}`,borderRadius:10,padding:"11px",fontSize:12,cursor:"pointer"}}>Desconectar Strava</button>}
       </div>
       <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:12}}>HISTÓRICO</div>
-      {minhas.length===0?(
-        <div style={{textAlign:"center",padding:32,color:CINZA,fontSize:13}}>Nenhuma atividade ainda</div>
-      ):minhas.slice().reverse().map((a,i)=>(
+      {minhas.length===0?<div style={{textAlign:"center",padding:32,color:CINZA,fontSize:13}}>Nenhuma atividade ainda</div>
+      :minhas.slice().reverse().map((a,i)=>(
         <div key={i} style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{fontSize:13,color:BRANCO,fontWeight:500}}>{a.desafio_nome||"Atividade"}</div>
@@ -369,14 +314,15 @@ function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,descon
 function ModalRegistrar({desafio,usuario,onSalvar,onFechar}){
   const [val,setVal]=useState("");
   const [loading,setLoading]=useState(false);
+  const [erro,setErro]=useState("");
   const salvar=async()=>{
     if(!val)return;
-    setLoading(true);
+    setLoading(true);setErro("");
     try{
       const token=await getAccessToken();
       await escreverAba(token,"atividades",[[Date.now().toString(),usuario.id,usuario.nome,desafio.id||desafio.nome,desafio.nome,val,new Date().toLocaleDateString("pt-BR"),"manual"]]);
       onSalvar();
-    }catch(e){alert("Erro ao salvar");}
+    }catch(e){setErro("Erro: "+e.message);}
     setLoading(false);
   };
   return(
@@ -385,13 +331,11 @@ function ModalRegistrar({desafio,usuario,onSalvar,onFechar}){
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:BRANCO,letterSpacing:2,marginBottom:4}}>REGISTRAR</div>
         <div style={{fontSize:13,color:CINZA,marginBottom:24}}>{desafio.nome}</div>
         <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:8}}>{desafio.tipo==="cal"?"CALORIAS":desafio.tipo==="tempo"?"MINUTOS":desafio.tipo==="dias"?"DIAS":"KM"}</div>
-        <input type="number" value={val} onChange={e=>setVal(e.target.value)} placeholder="0"
-          style={{width:"100%",background:"#111",border:`1px solid ${BORDA}`,borderRadius:10,padding:"16px",color:BRANCO,fontSize:24,textAlign:"center",outline:"none",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,marginBottom:20}}/>
+        <input type="number" value={val} onChange={e=>setVal(e.target.value)} placeholder="0" style={{width:"100%",background:"#111",border:`1px solid ${BORDA}`,borderRadius:10,padding:"16px",color:BRANCO,fontSize:24,textAlign:"center",outline:"none",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,marginBottom:12}}/>
+        {erro&&<div style={{color:VERMELHO,fontSize:12,marginBottom:12,textAlign:"center"}}>{erro}</div>}
         <div style={{display:"flex",gap:10}}>
           <button onClick={onFechar} style={{flex:1,padding:14,background:"transparent",border:`1px solid ${BORDA}`,borderRadius:10,color:CINZA,fontSize:13,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={salvar} disabled={!val||loading} style={{flex:2,padding:14,background:DOURADO,color:"#000",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer",opacity:val?1:0.5}}>
-            {loading?"SALVANDO...":"SALVAR ✓"}
-          </button>
+          <button onClick={salvar} disabled={!val||loading} style={{flex:2,padding:14,background:DOURADO,color:"#000",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer",opacity:val?1:0.5}}>{loading?"SALVANDO...":"SALVAR ✓"}</button>
         </div>
       </div>
     </div>
@@ -406,14 +350,10 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
   const porNivel=useMemo(()=>{const m={Iniciante:0,"Intermediário":0,"Avançado":0};for(const u of usuarios){if(u.nivel)m[u.nivel]=(m[u.nivel]||0)+1;}return m;},[usuarios]);
   const porVinculo=useMemo(()=>{const m={Cliente:0,Equipe:0,Externo:0};for(const u of usuarios){if(u.vinculo)m[u.vinculo]=(m[u.vinculo]||0)+1;}return m;},[usuarios]);
   const total=usuarios.length||1;
-
   return(
     <div style={{padding:"20px 20px 100px",fontFamily:"'Inter',sans-serif"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div>
-          <div style={{fontSize:11,color:CINZA}}>Painel · Organizador</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:BRANCO,letterSpacing:2}}>{usuario.nome.split(" ")[0].toUpperCase()}</div>
-        </div>
+        <div><div style={{fontSize:11,color:CINZA}}>Painel · Organizador</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:BRANCO,letterSpacing:2}}>{usuario.nome.split(" ")[0].toUpperCase()}</div></div>
         <div style={{width:40,height:40,background:DOURADO,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"#000"}}>{usuario.nome[0]}</div>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:20,background:"#111",borderRadius:12,padding:4}}>
@@ -423,14 +363,8 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
       </div>
       {abaP==="desafios"&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-          <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:14}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:DOURADO}}>{usuarios.length}</div>
-            <div style={{fontSize:10,color:CINZA,letterSpacing:1}}>PARTICIPANTES</div>
-          </div>
-          <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:14}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:DOURADO}}>{desafios.filter(d=>d.ativo==="true").length}</div>
-            <div style={{fontSize:10,color:CINZA,letterSpacing:1}}>ATIVOS</div>
-          </div>
+          <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:14}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:DOURADO}}>{usuarios.length}</div><div style={{fontSize:10,color:CINZA,letterSpacing:1}}>PARTICIPANTES</div></div>
+          <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:14}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:DOURADO}}>{desafios.filter(d=>d.ativo==="true").length}</div><div style={{fontSize:10,color:CINZA,letterSpacing:1}}>ATIVOS</div></div>
         </div>
         <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:12}}>DESAFIOS</div>
         {desafios.length===0&&<div style={{textAlign:"center",padding:32,color:CINZA,background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,marginBottom:16,fontSize:13}}>Nenhum desafio ainda</div>}
@@ -463,13 +397,8 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
           <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:12}}>SEXO</div>
           {[["👨 Masculino",porSexo.Masculino,"#60a5fa"],["👩 Feminino",porSexo.Feminino,"#f472b6"],["Outro",porSexo.Outro,CINZA]].map(([nome,qtd,cor])=>(
             <div key={nome} style={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <span style={{fontSize:12,color:BRANCO}}>{nome}</span>
-                <span style={{fontSize:12,color:cor,fontWeight:600}}>{qtd} ({Math.round((qtd||0)/total*100)}%)</span>
-              </div>
-              <div style={{background:BORDA,borderRadius:4,height:8,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${(qtd||0)/total*100}%`,background:cor,borderRadius:4}}/>
-              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:BRANCO}}>{nome}</span><span style={{fontSize:12,color:cor,fontWeight:600}}>{qtd} ({Math.round((qtd||0)/total*100)}%)</span></div>
+              <div style={{background:BORDA,borderRadius:4,height:8,overflow:"hidden"}}><div style={{height:"100%",width:`${(qtd||0)/total*100}%`,background:cor,borderRadius:4}}/></div>
             </div>
           ))}
         </div>
@@ -477,13 +406,8 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
           <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:12}}>NÍVEL</div>
           {[["🟢 Iniciante",porNivel.Iniciante,VERDE],["🟡 Intermediário",porNivel["Intermediário"],"#b8860b"],["🔴 Avançado",porNivel["Avançado"],VERMELHO]].map(([nome,qtd,cor])=>(
             <div key={nome} style={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <span style={{fontSize:12,color:BRANCO}}>{nome}</span>
-                <span style={{fontSize:12,color:cor,fontWeight:600}}>{qtd||0}</span>
-              </div>
-              <div style={{background:BORDA,borderRadius:4,height:8,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${(qtd||0)/total*100}%`,background:cor,borderRadius:4}}/>
-              </div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:BRANCO}}>{nome}</span><span style={{fontSize:12,color:cor,fontWeight:600}}>{qtd||0}</span></div>
+              <div style={{background:BORDA,borderRadius:4,height:8,overflow:"hidden"}}><div style={{height:"100%",width:`${(qtd||0)/total*100}%`,background:cor,borderRadius:4}}/></div>
             </div>
           ))}
         </div>
@@ -504,10 +428,7 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
             <div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${BORDA}`}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:16}}>{"🥇🥈🥉"[i]||`#${i+1}`}</span>
-                <div>
-                  <div style={{fontSize:13,color:BRANCO,fontWeight:500}}>{u.nome}</div>
-                  <div style={{fontSize:10,color:CINZA}}>{u.nivel} · {u.vinculo}</div>
-                </div>
+                <div><div style={{fontSize:13,color:BRANCO,fontWeight:500}}>{u.nome}</div><div style={{fontSize:10,color:CINZA}}>{u.nivel} · {u.vinculo}</div></div>
               </div>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:DOURADO}}>{u.totalKm.toFixed(1)} km</div>
             </div>
@@ -521,15 +442,21 @@ function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,
 function TelaDesafio({desafioEditando,onSalvar,onVoltar}){
   const [form,setForm]=useState(desafioEditando||{nome:"",descricao:"",tipo:"km",meta:"",inicio:"",fim:"",ativo:"true"});
   const [loading,setLoading]=useState(false);
+  const [erro,setErro]=useState("");
   const set=(k,v)=>setForm(p=>({...p,[k]:v}));
   const salvar=async()=>{
     if(!form.nome)return;
-    setLoading(true);
+    setLoading(true);setErro("");
     try{
       const token=await getAccessToken();
-      await escreverAba(token,"desafios",[[desafioEditando?desafioEditando.id:Date.now().toString(),form.nome,form.descricao,form.tipo,form.meta,form.ativo,form.inicio,form.fim]]);
+      const id=desafioEditando?desafioEditando.id:Date.now().toString();
+      const row=[id,form.nome,form.descricao||"",form.tipo||"km",form.meta||"",form.ativo||"true",form.inicio||"",form.fim||""];
+      await escreverAba(token,"desafios",[row]);
       onSalvar();
-    }catch(e){alert("Erro ao salvar");}
+    }catch(e){
+      setErro("Erro: "+e.message);
+      setLoading(false);
+    }
     setLoading(false);
   };
   const iS={width:"100%",background:"#111",border:`1px solid ${BORDA}`,borderRadius:10,padding:"13px 14px",color:BRANCO,fontSize:14,outline:"none",fontFamily:"Inter",marginBottom:14};
@@ -564,6 +491,7 @@ function TelaDesafio({desafioEditando,onSalvar,onVoltar}){
           <button key={val} onClick={()=>set("ativo",val)} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${form.ativo===val?DOURADO:BORDA}`,background:form.ativo===val?"rgba(201,168,76,0.1)":"transparent",color:form.ativo===val?DOURADO:CINZA,fontSize:13,cursor:"pointer",fontWeight:500}}>{nome}</button>
         ))}
       </div>
+      {erro&&<div style={{color:VERMELHO,fontSize:12,marginBottom:14,textAlign:"center",background:"rgba(192,96,64,0.1)",padding:"10px",borderRadius:8}}>{erro}</div>}
       <button onClick={salvar} disabled={!form.nome||loading} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer",opacity:form.nome?1:0.5}}>
         {loading?"SALVANDO...":"SALVAR DESAFIO ✓"}
       </button>
@@ -615,22 +543,13 @@ export default function App(){
 
   const handleSincronizar=async()=>{
     if(!stravaToken||!usuario)return;
-    setSincronizando(true);
-    setSincMsg("Buscando atividades...");
+    setSincronizando(true);setSincMsg("Buscando atividades...");
     try{
-      const res=await fetch("/api/strava",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({access_token:stravaToken})
-      });
+      const res=await fetch("/api/strava",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:stravaToken})});
       const data=await res.json();
       if(Array.isArray(data)&&data.length>0){
         const desafiosAtivos=desafios.filter(d=>d.ativo==="true");
-        if(desafiosAtivos.length===0){
-          setSincMsg(`${data.length} atividade(s) encontrada(s), mas não há desafios ativos.`);
-          setSincronizando(false);
-          return;
-        }
+        if(desafiosAtivos.length===0){setSincMsg(`${data.length} atividade(s) encontrada(s), mas não há desafios ativos.`);setSincronizando(false);return;}
         const token=await getAccessToken();
         const jaRegistradas=await lerAba(token,"atividades");
         const idsExistentes=new Set(jaRegistradas.slice(1).map(r=>r[0]));
@@ -643,21 +562,19 @@ export default function App(){
             const cal=Math.round((ativ.kilojoules||0)*0.239);
             const tempo=Math.round((ativ.moving_time||0)/60);
             const valor=desafio.tipo==="cal"?cal:desafio.tipo==="tempo"?tempo:km;
-            const data2=new Date(ativ.start_date).toLocaleDateString("pt-BR");
-            await escreverAba(token,"atividades",[[idAtiv,usuario.id,usuario.nome,desafio.id,desafio.nome,valor,data2,"strava"]]);
+            const dataAtiv=new Date(ativ.start_date).toLocaleDateString("pt-BR");
+            await escreverAba(token,"atividades",[[idAtiv,usuario.id,usuario.nome,desafio.id,desafio.nome,valor,dataAtiv,"strava"]]);
             novas++;
           }
         }
         setSincMsg(novas>0?`✓ ${novas} atividade(s) importada(s)!`:"Nenhuma atividade nova.");
         if(novas>0)await carregarDados();
-      } else if(Array.isArray(data)&&data.length===0){
+      }else if(Array.isArray(data)&&data.length===0){
         setSincMsg("Nenhuma atividade encontrada no Strava.");
-      } else {
-        setSincMsg("Erro: "+JSON.stringify(data).slice(0,80));
+      }else{
+        setSincMsg("Resposta inesperada: "+JSON.stringify(data).slice(0,100));
       }
-    }catch(e){
-      setSincMsg("Erro: "+e.message);
-    }
+    }catch(e){setSincMsg("Erro: "+e.message);}
     setSincronizando(false);
   };
 
@@ -675,9 +592,7 @@ export default function App(){
   return(
     <><style>{CSS}</style>
     <div style={{minHeight:"100vh",background:FUNDO,color:BRANCO}}>
-      {loading?(
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",color:CINZA,fontSize:13}}>Carregando...</div>
-      ):(
+      {loading?<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",color:CINZA,fontSize:13}}>Carregando...</div>:(
         <>
           {aba==="home"&&<TelaHome usuario={usuario} desafios={desafios} onRegistrar={setModalDesafio} stravaToken={stravaToken} conectarStrava={conectarStrava} onSincronizar={handleSincronizar} sincMsg={sincMsg} sincronizando={sincronizando}/>}
           {aba==="ranking"&&<TelaRanking atividades={atividades}/>}
