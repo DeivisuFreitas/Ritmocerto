@@ -58,24 +58,79 @@ if(data.error)throw new Error(data.error.message);
 return data;																									
 }																									
 																									
-function usarStrava(){																									
-const [stravaToken,setStravaToken]=useState(()=>localStorage.getItem("strava_token")||null);																									
+async function salvarStravaNoSheet(usuario, token, refresh){																									
+try{																									
+const gToken=await getAccessToken();																									
+const rows=await lerAba(gToken,"usuarios");																									
+const idx=rows.findIndex(r=>r[0]===usuario.id);																									
+if(idx>0){																									
+const rowNum=idx+1;																									
+const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/usuarios!L${rowNum}:M${rowNum}?valueInputOption=RAW`;																									
+await fetch(url,{method:"PUT",headers:{Authorization:`Bearer ${gToken}`,"Content-Type":"application/json"},body:JSON.stringify({values:[[token,refresh]]})});																									
+} else {																									
+// Login fixo - cria linha na planilha																									
+await escreverAba(gToken,"usuarios",[[usuario.id,usuario.nome,usuario.email,"","",(usuario.nivel||"Avançado"),(usuario.sexo||""),(usuario.vinculo||"Equipe"),"","","",token,refresh]]);																									
+}																									
+}catch(e){console.error("Erro ao salvar Strava:",e);}																									
+}																									
+																									
+async function buscarStravaDoSheet(usuarioId){																									
+try{																									
+const gToken=await getAccessToken();																									
+const rows=await lerAba(gToken,"usuarios");																									
+const row=rows.find(r=>r[0]===usuarioId);																									
+if(row&&row[11])return{token:row[11],refresh:row[12]||""};																									
+}catch(e){console.error("Erro ao buscar Strava:",e);}																									
+return null;																									
+}																									
+																									
+async function limparStravaNoSheet(usuarioId){																									
+try{																									
+const gToken=await getAccessToken();																									
+const rows=await lerAba(gToken,"usuarios");																									
+const idx=rows.findIndex(r=>r[0]===usuarioId);																									
+if(idx>0){																									
+const rowNum=idx+1;																									
+const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/usuarios!L${rowNum}:M${rowNum}?valueInputOption=RAW`;																									
+await fetch(url,{method:"PUT",headers:{Authorization:`Bearer ${gToken}`,"Content-Type":"application/json"},body:JSON.stringify({values:[["",""]]})});																									
+}																									
+}catch(e){console.error("Erro ao limpar Strava:",e);}																									
+}																									
+																									
+function usarStrava(usuario){																									
+const [stravaToken,setStravaToken]=useState(null);																									
+const [carregandoStrava,setCarregandoStrava]=useState(false);																									
+																									
+// Verifica retorno OAuth do Strava																									
 useEffect(()=>{																									
 const params=new URLSearchParams(window.location.search);																									
 const token=params.get("strava_token");																									
-const athlete=params.get("strava_athlete");																									
 const refresh=params.get("strava_refresh");																									
-if(token){																									
-localStorage.setItem("strava_token",token);																									
-localStorage.setItem("strava_athlete",athlete||"");																									
-localStorage.setItem("strava_refresh",refresh||"");																									
+if(token&&usuario){																									
 setStravaToken(token);																									
 window.history.replaceState({},"","/");																									
+salvarStravaNoSheet(usuario,token,refresh||"");																									
 }																									
-},[]);																									
+},[usuario]);																									
+																									
+// Busca token na planilha quando usuario loga																									
+useEffect(()=>{																									
+if(!usuario)return;																									
+setCarregandoStrava(true);																									
+buscarStravaDoSheet(usuario.id).then(dados=>{																									
+if(dados?.token)setStravaToken(dados.token);																									
+setCarregandoStrava(false);																									
+});																									
+},[usuario?.id]);																									
+																									
 const conectarStrava=()=>{window.location.href=`https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=activity:read_all`;};																									
-const desconectarStrava=()=>{localStorage.removeItem("strava_token");localStorage.removeItem("strava_athlete");localStorage.removeItem("strava_refresh");setStravaToken(null);};																									
-return{stravaToken,conectarStrava,desconectarStrava};																									
+																									
+const desconectarStrava=()=>{																									
+setStravaToken(null);																									
+if(usuario)limparStravaNoSheet(usuario.id);																									
+};																									
+																									
+return{stravaToken,conectarStrava,desconectarStrava,carregandoStrava};																									
 }																									
 																									
 function diasRestantes(fim){																									
@@ -807,7 +862,7 @@ const [desafioSelecionado,setDesafioSelecionado]=useState(null);
 const [loading,setLoading]=useState(false);																									
 const [sincMsg,setSincMsg]=useState("");																									
 const [sincronizando,setSincronizando]=useState(false);																									
-const {stravaToken,conectarStrava,desconectarStrava}=usarStrava();																									
+const {stravaToken,conectarStrava,desconectarStrava,carregandoStrava}=usarStrava(usuario);																									
 																									
 const carregarDados=async()=>{																									
 setLoading(true);																									
@@ -895,61 +950,6 @@ return(
 </div></>																									
 );																									
 }																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
-																									
 																									
 																									
 																									
