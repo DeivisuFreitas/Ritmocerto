@@ -8,6 +8,16 @@ const STRAVA_CLIENT_ID="259363";
 const STRAVA_REDIRECT="https://ritmocerto.vercel.app/api/strava";																									
 const CARD="#1a1a1a",BORDA="#2e2e2e",BRANCO="#f5f5f5",CINZA="#a0a0a0",DOURADO="#c9a84c",FUNDO="#0f0f0f",VERMELHO="#c06040",VERDE="#4a7a1a",STRAVA="#FC4C02";																									
 																									
+const MODALIDADES=[																									
+{pt:"Corrida",emoji:"🏃",strava:"Run"},																									
+{pt:"Bicicleta",emoji:"🚴",strava:"Ride"},																									
+{pt:"Caminhada",emoji:"🚶",strava:"Walk"},																									
+{pt:"Trilha",emoji:"🥾",strava:"Hike"},																									
+{pt:"Natação",emoji:"🏊",strava:"Swim"},																									
+{pt:"Musculação",emoji:"💪",strava:"WeightTraining"},																									
+{pt:"Funcional",emoji:"🏋️",strava:"Workout"},																									
+];																									
+																									
 const LOGINS_FIXOS=[																									
 {email:"ritmocerto@mangalo",senha:"Ritmocerto2021",usuario:{id:"master",nome:"Admin",email:"ritmocerto@mangalo",nivel:"Avançado",vinculo:"Equipe",isOrganizador:true,isAdmin:true}},																									
 {email:"pedrormiranda@live.com",senha:"cmrc2026@",usuario:{id:"pedro",nome:"Pedro Miranda",email:"pedrormiranda@live.com",nivel:"Avançado",vinculo:"Equipe",isOrganizador:true}},																									
@@ -68,11 +78,9 @@ const desconectarStrava=()=>{localStorage.removeItem("strava_token");localStorag
 return{stravaToken,conectarStrava,desconectarStrava};																									
 }																									
 																									
-// ── HELPERS ─────────────────────────────────────────────────																									
 function diasRestantes(fim){																									
 if(!fim)return null;																									
-const f=new Date(fim);																									
-const hoje=new Date();																									
+const f=new Date(fim);const hoje=new Date();																									
 const diff=Math.ceil((f-hoje)/(1000*60*60*24));																									
 return diff>0?diff:0;																									
 }																									
@@ -82,7 +90,14 @@ if(!meta||!feito)return 0;
 return Math.min(100,Math.round((parseFloat(feito)/parseFloat(meta))*100));																									
 }																									
 																									
-// ── LOGIN ────────────────────────────────────────────────────																									
+function modalidadeLabel(stravaList){																									
+if(!stravaList)return "";																									
+return stravaList.split(",").map(t=>{																									
+const m=MODALIDADES.find(m=>m.strava===t.trim());																									
+return m?`${m.emoji} ${m.pt}`:t;																									
+}).join(" · ");																									
+}																									
+																									
 function TelaLogin({onLogin}){																									
 const [email,setEmail]=useState("");																									
 const [senha,setSenha]=useState("");																									
@@ -133,7 +148,6 @@ return(
 );																									
 }																									
 																									
-// ── CADASTRO ─────────────────────────────────────────────────																									
 function TelaCadastro({onVoltar,onCadastrado}){																									
 const [passo,setPasso]=useState(1);																									
 const [form,setForm]=useState({nome:"",email:"",senha:"",telefone:"",sexo:"",cidade:"",idade:"",nivel:"Iniciante",vinculo:"Externo"});																									
@@ -201,10 +215,8 @@ return(
 );																									
 }																									
 																									
-// ── HOME ─────────────────────────────────────────────────────																									
 function TelaHome({usuario,desafios,atividades,onVerDesafio,stravaToken,conectarStrava,onSincronizar,sincMsg,sincronizando}){																									
 const ativos=desafios.filter(d=>d.ativo==="true"||d.ativo===true);																									
-																									
 return(																									
 <div style={{padding:"20px 20px 100px",fontFamily:"'Inter',sans-serif"}}>																									
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>																									
@@ -214,8 +226,6 @@ return(
 </div>																									
 <div style={{width:42,height:42,background:DOURADO,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#000"}}>{usuario.nome[0]}</div>																									
 </div>																									
-																									
-{/* Strava banner */}																									
 {!stravaToken?(																									
 <div style={{background:"rgba(252,76,2,0.08)",border:"1px solid rgba(252,76,2,0.3)",borderRadius:14,padding:14,marginBottom:16}}>																									
 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>																									
@@ -235,7 +245,6 @@ return(
 </div>																									
 </div>																									
 )}																									
-																									
 <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:10}}>DESAFIOS ATIVOS</div>																									
 {ativos.length===0?(																									
 <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:16,padding:24,textAlign:"center"}}>																									
@@ -247,11 +256,8 @@ const minhasAtivs=atividades.filter(a=>a.usuario_id===usuario.id&&a.desafio_id==
 const totalFeito=minhasAtivs.reduce((a,r)=>a+(parseFloat(r.km)||0),0);																									
 const pct=progressoPct(totalFeito,d.meta);																									
 const dias=diasRestantes(d.fim);																									
-const rankingDesafio=Object.entries(																									
-atividades.filter(a=>a.desafio_id===d.id).reduce((acc,a)=>{acc[a.usuario_id]=(acc[a.usuario_id]||0)+(parseFloat(a.km)||0);return acc;},{})																									
-).sort((a,b)=>b[1]-a[1]);																									
-const minhaPos=rankingDesafio.findIndex(([id])=>id===usuario.id)+1;																									
-																									
+const rankMap=atividades.filter(a=>a.desafio_id===d.id).reduce((acc,a)=>{acc[a.usuario_id]=(acc[a.usuario_id]||0)+(parseFloat(a.km)||0);return acc;},{});																									
+const rankPos=Object.entries(rankMap).sort((a,b)=>b[1]-a[1]).findIndex(([id])=>id===usuario.id)+1;																									
 return(																									
 <div key={i} onClick={()=>onVerDesafio(d)} style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:16,overflow:"hidden",marginBottom:14,cursor:"pointer"}}>																									
 <div style={{background:DOURADO,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>																									
@@ -260,7 +266,8 @@ return(
 </div>																									
 <div style={{padding:"14px"}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:BRANCO,letterSpacing:1,marginBottom:3}}>{d.nome}</div>																									
-<div style={{fontSize:11,color:CINZA,marginBottom:12}}>{d.descricao}</div>																									
+<div style={{fontSize:11,color:CINZA,marginBottom:4}}>{d.descricao}</div>																									
+{d.modalidades&&<div style={{fontSize:10,color:STRAVA,marginBottom:10}}>{modalidadeLabel(d.modalidades)}</div>}																									
 {d.meta&&<>																									
 <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>																									
 <span style={{fontSize:11,color:BRANCO,fontWeight:600}}>{totalFeito.toFixed(1)} {d.tipo==="cal"?"cal":d.tipo==="tempo"?"min":d.tipo==="dias"?"dias":"km"}</span>																									
@@ -270,19 +277,13 @@ return(
 <div style={{height:"100%",width:`${pct}%`,background:DOURADO,borderRadius:4}}/>																									
 </div>																									
 </>}																									
-<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>																									
-<div style={{background:"#111",borderRadius:8,padding:"8px",textAlign:"center"}}>																									
-<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:DOURADO}}>{minhaPos>0?`#${minhaPos}`:"—"}</div>																									
-<div style={{fontSize:9,color:CINZA,letterSpacing:1}}>POSIÇÃO</div>																									
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>																									
+{[[rankPos>0?`#${rankPos}`:"—","POSIÇÃO"],[minhasAtivs.length,"ATIVID."],[dias!==null?`${dias}d`:"—","RESTA"]].map(([v,l],j)=>(																									
+<div key={j} style={{background:"#111",borderRadius:8,padding:"8px",textAlign:"center"}}>																									
+<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:DOURADO}}>{v}</div>																									
+<div style={{fontSize:9,color:CINZA,letterSpacing:1}}>{l}</div>																									
 </div>																									
-<div style={{background:"#111",borderRadius:8,padding:"8px",textAlign:"center"}}>																									
-<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:DOURADO}}>{minhasAtivs.length}</div>																									
-<div style={{fontSize:9,color:CINZA,letterSpacing:1}}>ATIVID.</div>																									
-</div>																									
-<div style={{background:"#111",borderRadius:8,padding:"8px",textAlign:"center"}}>																									
-<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:DOURADO}}>{dias!==null?`${dias}d`:"—"}</div>																									
-<div style={{fontSize:9,color:CINZA,letterSpacing:1}}>RESTA</div>																									
-</div>																									
+))}																									
 </div>																									
 <div style={{textAlign:"center",fontSize:11,color:CINZA}}>Toque para ver detalhes →</div>																									
 </div>																									
@@ -293,23 +294,15 @@ return(
 );																									
 }																									
 																									
-// ── DETALHES DO DESAFIO ───────────────────────────────────────																									
 function TelaDesafioDetalhe({desafio,atividades,usuario,onVoltar}){																									
 const minhasAtivs=atividades.filter(a=>a.usuario_id===usuario.id&&a.desafio_id===desafio.id);																									
 const totalFeito=minhasAtivs.reduce((a,r)=>a+(parseFloat(r.km)||0),0);																									
 const pct=progressoPct(totalFeito,desafio.meta);																									
 const dias=diasRestantes(desafio.fim);																									
-const rankingDesafio=Object.entries(																									
-atividades.filter(a=>a.desafio_id===desafio.id).reduce((acc,a)=>{																									
-if(!acc[a.usuario_id])acc[a.usuario_id]={nome:a.usuario_nome,total:0};																									
-acc[a.usuario_id].total+=(parseFloat(a.km)||0);																									
-return acc;																									
-},{})																									
-).sort((a,b)=>b[1].total-a[1].total);																									
-const minhaPos=rankingDesafio.findIndex(([id])=>id===usuario.id)+1;																									
+const rankMap=atividades.filter(a=>a.desafio_id===desafio.id).reduce((acc,a)=>{if(!acc[a.usuario_id])acc[a.usuario_id]={nome:a.usuario_nome,total:0};acc[a.usuario_id].total+=(parseFloat(a.km)||0);return acc;},{});																									
+const rankList=Object.entries(rankMap).sort((a,b)=>b[1].total-a[1].total);																									
+const minhaPos=rankList.findIndex(([id])=>id===usuario.id)+1;																									
 const unidade=desafio.tipo==="cal"?"cal":desafio.tipo==="tempo"?"min":desafio.tipo==="dias"?"dias":"km";																									
-const medals=["🥇","🥈","🥉"];																									
-																									
 return(																									
 <div style={{minHeight:"100vh",background:FUNDO,fontFamily:"'Inter',sans-serif"}}>																									
 <div style={{padding:"20px 20px 100px"}}>																									
@@ -320,8 +313,11 @@ return(
 <div style={{fontSize:10,color:CINZA}}>{desafio.inicio&&desafio.fim?`${desafio.inicio} até ${desafio.fim}`:"Sem período definido"}</div>																									
 </div>																									
 </div>																									
-																									
-{/* Hero progresso */}																									
+{desafio.modalidades&&(																									
+<div style={{background:"rgba(252,76,2,0.08)",border:"1px solid rgba(252,76,2,0.2)",borderRadius:10,padding:"8px 12px",marginBottom:14,fontSize:11,color:STRAVA}}>																									
+Modalidades: {modalidadeLabel(desafio.modalidades)}																									
+</div>																									
+)}																									
 <div style={{background:`linear-gradient(135deg,${DOURADO} 0%,#8a6420 100%)`,borderRadius:16,padding:20,marginBottom:14,position:"relative",overflow:"hidden"}}>																									
 <div style={{position:"absolute",right:-10,bottom:-10,fontSize:80,opacity:0.15}}>🏃</div>																									
 <div style={{fontSize:9,color:"rgba(0,0,0,0.6)",fontWeight:700,letterSpacing:2,marginBottom:8}}>⚡ MEU PROGRESSO</div>																									
@@ -337,17 +333,13 @@ return(
 <span>faltam {desafio.meta?((parseFloat(desafio.meta)-totalFeito).toFixed(1)+` ${unidade}`):"—"}</span>																									
 </div>																									
 </div>																									
-																									
-{/* Posição */}																									
 {minhaPos>0&&<div style={{background:"rgba(201,168,76,0.08)",border:`1px solid rgba(201,168,76,0.3)`,borderRadius:14,padding:16,marginBottom:14,display:"flex",alignItems:"center",gap:16}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:46,color:DOURADO,lineHeight:1}}>#{minhaPos}</div>																									
 <div>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:BRANCO,letterSpacing:1}}>SUA POSIÇÃO</div>																									
-<div style={{fontSize:11,color:CINZA}}>entre {rankingDesafio.length} corredores</div>																									
+<div style={{fontSize:11,color:CINZA}}>entre {rankList.length} corredores</div>																									
 </div>																									
 </div>}																									
-																									
-{/* Stats */}																									
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>																									
 {[[totalFeito.toFixed(1),unidade.toUpperCase()+" FEITOS"],[minhasAtivs.length,"ATIVIDADES"],[dias!==null?`${dias}d`:"—","DIAS REST."]].map(([v,l],i)=>(																									
 <div key={i} style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:12,textAlign:"center"}}>																									
@@ -356,23 +348,27 @@ return(
 </div>																									
 ))}																									
 </div>																									
-																									
-{/* Minhas atividades */}																									
 <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:10}}>MINHAS ATIVIDADES</div>																									
 {minhasAtivs.length===0?(																									
-<div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:20,textAlign:"center",marginBottom:14,color:CINZA,fontSize:13}}>Nenhuma atividade ainda</div>																									
+<div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:20,textAlign:"center",color:CINZA,fontSize:13}}>Nenhuma atividade ainda</div>																									
 ):(																									
-<div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,padding:"4px 14px",marginBottom:14}}>																									
-{minhasAtivs.slice().reverse().slice(0,5).map((a,i)=>(																									
-<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 0",borderBottom:i<minhasAtivs.length-1?`1px solid ${BORDA}`:"none"}}>																									
-<div style={{width:34,height:34,background:"#2a2a2a",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🏃</div>																									
+<div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,padding:"4px 14px"}}>																									
+{minhasAtivs.slice().reverse().slice(0,5).map((a,i)=>{																									
+const mod=MODALIDADES.find(m=>m.strava===a.tipo_atividade);																									
+return(																									
+<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 0",borderBottom:i<Math.min(minhasAtivs.length,5)-1?`1px solid ${BORDA}`:"none"}}>																									
+<div style={{width:34,height:34,background:"#2a2a2a",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{mod?mod.emoji:"🏃"}</div>																									
 <div style={{flex:1}}>																									
-<div style={{fontSize:12,color:BRANCO,fontWeight:500}}>Atividade{a.fonte==="strava"&&<span style={{color:STRAVA,fontSize:10}}> · Strava</span>}</div>																									
+<div style={{fontSize:12,color:BRANCO,fontWeight:500}}>																									
+{mod?mod.pt:"Atividade"}																									
+{a.fonte==="strava"&&<span style={{color:STRAVA,fontSize:10}}> · Strava</span>}																									
+</div>																									
 <div style={{fontSize:10,color:CINZA}}>{a.data}</div>																									
 </div>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:DOURADO}}>{a.km} {unidade}</div>																									
 </div>																									
-))}																									
+);																									
+})}																									
 </div>																									
 )}																									
 </div>																									
@@ -380,17 +376,13 @@ return(
 );																									
 }																									
 																									
-// ── RANKING ───────────────────────────────────────────────────																									
 function TelaRanking({desafios,atividades,usuario}){																									
 const [desafioSel,setDesafioSel]=useState(null);																									
-																									
 useEffect(()=>{																									
 if(desafios.length>0&&!desafioSel){																									
-const ativo=desafios.find(d=>d.ativo==="true");																									
-setDesafioSel(ativo||desafios[0]);																									
+setDesafioSel(desafios.find(d=>d.ativo==="true")||desafios[0]);																									
 }																									
 },[desafios]);																									
-																									
 const rankingAtual=useMemo(()=>{																									
 if(!desafioSel)return[];																									
 const map={};																									
@@ -400,62 +392,43 @@ map[a.usuario_id].total+=(parseFloat(a.km)||0);
 });																									
 return Object.values(map).sort((a,b)=>b.total-a.total);																									
 },[desafioSel,atividades]);																									
-																									
 const minhaPos=rankingAtual.findIndex(r=>r.id===usuario.id)+1;																									
 const meuTotal=rankingAtual.find(r=>r.id===usuario.id)?.total||0;																									
 const medals=["🥇","🥈","🥉"];																									
 const unidade=desafioSel?.tipo==="cal"?"cal":desafioSel?.tipo==="tempo"?"min":desafioSel?.tipo==="dias"?"dias":"km";																									
-																									
 return(																									
 <div style={{padding:"20px 20px 100px",fontFamily:"'Inter',sans-serif"}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:BRANCO,letterSpacing:2,marginBottom:16}}>RANKING</div>																									
-																									
-{/* Seletor de desafio */}																									
 <div style={{display:"flex",gap:8,marginBottom:16,overflowX:"auto",paddingBottom:4}}>																									
 {desafios.map((d,i)=>(																									
-<button key={i} onClick={()=>setDesafioSel(d)}																									
-style={{padding:"7px 14px",borderRadius:20,fontSize:11,fontWeight:600,whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,																									
-background:desafioSel?.id===d.id?(d.ativo==="true"?"rgba(201,168,76,0.15)":"rgba(74,122,26,0.1)"):"#1a1a1a",																									
-color:desafioSel?.id===d.id?(d.ativo==="true"?DOURADO:VERDE):CINZA,																									
-border:`1px solid ${desafioSel?.id===d.id?(d.ativo==="true"?DOURADO:VERDE):BORDA}`}}>																									
+<button key={i} onClick={()=>setDesafioSel(d)} style={{padding:"7px 14px",borderRadius:20,fontSize:11,fontWeight:600,whiteSpace:"nowrap",cursor:"pointer",flexShrink:0,background:desafioSel?.id===d.id?(d.ativo==="true"?"rgba(201,168,76,0.15)":"rgba(74,122,26,0.1)"):"#1a1a1a",color:desafioSel?.id===d.id?(d.ativo==="true"?DOURADO:VERDE):CINZA,border:`1px solid ${desafioSel?.id===d.id?(d.ativo==="true"?DOURADO:VERDE):BORDA}`}}>																									
 {d.ativo==="true"?"⚡ ":""}{d.nome}																									
 </button>																									
 ))}																									
 </div>																									
-																									
-{!desafioSel?(																									
-<div style={{textAlign:"center",padding:40,color:CINZA}}>Nenhum desafio disponível</div>																									
-):(																									
+{!desafioSel?<div style={{textAlign:"center",padding:40,color:CINZA}}>Nenhum desafio</div>:(																									
 <>																									
-{/* Info desafio */}																									
 <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:12,padding:14,marginBottom:14}}>																									
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>																									
 <div>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:desafioSel.ativo==="true"?DOURADO:CINZA,letterSpacing:1}}>{desafioSel.nome}</div>																									
 <div style={{fontSize:10,color:CINZA,marginTop:2}}>{desafioSel.ativo==="true"?"Em andamento":"Encerrado"} · {rankingAtual.length} corredores</div>																									
+{desafioSel.modalidades&&<div style={{fontSize:10,color:STRAVA,marginTop:2}}>{modalidadeLabel(desafioSel.modalidades)}</div>}																									
 </div>																									
 <div style={{background:desafioSel.ativo==="true"?"rgba(201,168,76,0.15)":"rgba(74,122,26,0.1)",border:`1px solid ${desafioSel.ativo==="true"?DOURADO:VERDE}`,borderRadius:20,padding:"4px 10px",fontSize:10,color:desafioSel.ativo==="true"?DOURADO:VERDE,fontWeight:700}}>																									
 {desafioSel.ativo==="true"?"⚡ ATIVO":"✓ ENCERRADO"}																									
 </div>																									
 </div>																									
 </div>																									
-																									
-{/* Minha posição */}																									
 {minhaPos>0&&<div style={{background:"rgba(201,168,76,0.08)",border:`1px solid rgba(201,168,76,0.3)`,borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>																									
-<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:40,color:DOURADO,lineHeight:1}}>																									
-{minhaPos<=3?medals[minhaPos-1]:`#${minhaPos}`}																									
-</div>																									
+<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:40,color:DOURADO,lineHeight:1}}>{minhaPos<=3?medals[minhaPos-1]:`#${minhaPos}`}</div>																									
 <div>																									
 <div style={{fontSize:12,color:CINZA}}>Sua posição</div>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:BRANCO,letterSpacing:1}}>{meuTotal.toFixed(1)} {unidade}</div>																									
 </div>																									
 </div>}																									
-																									
-{/* Ranking */}																									
 <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:10}}>CLASSIFICAÇÃO</div>																									
-{rankingAtual.length===0?(																									
-<div style={{textAlign:"center",padding:32,color:CINZA,fontSize:13,background:CARD,border:`1px solid ${BORDA}`,borderRadius:14}}>Nenhuma atividade registrada</div>																									
-):(																									
+{rankingAtual.length===0?<div style={{textAlign:"center",padding:32,color:CINZA,fontSize:13,background:CARD,border:`1px solid ${BORDA}`,borderRadius:14}}>Nenhuma atividade registrada</div>:(																									
 <div style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,padding:"4px 14px"}}>																									
 {rankingAtual.map((r,i)=>{																									
 const isEu=r.id===usuario.id;																									
@@ -476,31 +449,23 @@ return(
 );																									
 }																									
 																									
-// ── MEUS DESAFIOS (histórico) ─────────────────────────────────																									
 function TelaMeusDesafios({desafios,atividades,usuario,onVerDesafio}){																									
 const ativos=desafios.filter(d=>d.ativo==="true"||d.ativo===true);																									
 const inativos=desafios.filter(d=>d.ativo!=="true"&&d.ativo!==true);																									
-																									
 const getStats=(d)=>{																									
 const minhasAtivs=atividades.filter(a=>a.usuario_id===usuario.id&&a.desafio_id===d.id);																									
 const total=minhasAtivs.reduce((a,r)=>a+(parseFloat(r.km)||0),0);																									
 const pct=progressoPct(total,d.meta);																									
-const rankingDesafio=Object.entries(																									
-atividades.filter(a=>a.desafio_id===d.id).reduce((acc,a)=>{acc[a.usuario_id]=(acc[a.usuario_id]||0)+(parseFloat(a.km)||0);return acc;},{})																									
-).sort((a,b)=>b[1]-a[1]);																									
-const pos=rankingDesafio.findIndex(([id])=>id===usuario.id)+1;																									
+const rankMap=atividades.filter(a=>a.desafio_id===d.id).reduce((acc,a)=>{acc[a.usuario_id]=(acc[a.usuario_id]||0)+(parseFloat(a.km)||0);return acc;},{});																									
+const pos=Object.entries(rankMap).sort((a,b)=>b[1]-a[1]).findIndex(([id])=>id===usuario.id)+1;																									
 return{total,pct,pos,qtd:minhasAtivs.length};																									
 };																									
-																									
 const medals=["🥇","🥈","🥉"];																									
 const unidade=(d)=>d.tipo==="cal"?"cal":d.tipo==="tempo"?"min":d.tipo==="dias"?"dias":"km";																									
-																									
 return(																									
 <div style={{padding:"20px 20px 100px",fontFamily:"'Inter',sans-serif"}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:BRANCO,letterSpacing:2,marginBottom:4}}>MEUS DESAFIOS</div>																									
 <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:18}}>SEU HISTÓRICO</div>																									
-																									
-{/* ATIVOS */}																									
 {ativos.length>0&&<>																									
 <div style={{fontSize:10,color:DOURADO,letterSpacing:2,marginBottom:8}}>⚡ PARTICIPANDO AGORA</div>																									
 {ativos.map((d,i)=>{																									
@@ -508,11 +473,13 @@ const s=getStats(d);
 return(																									
 <div key={i} onClick={()=>onVerDesafio(d)} style={{background:CARD,border:`1px solid ${BORDA}`,borderRadius:14,overflow:"hidden",marginBottom:12,cursor:"pointer"}}>																									
 <div style={{background:DOURADO,padding:"10px 14px",display:"flex",justifyContent:"space-between"}}>																									
-<span style={{fontSize:9,fontWeight:700,color:"#000",letterSpacing:2}}>⚡ ATIVO · {d.tipo==="km"?"📏 KM":d.tipo==="cal"?"🔥 CAL":d.tipo==="tempo"?"⏱️ TEMPO":"📅 DIAS"}</span>																									
+<span style={{fontSize:9,fontWeight:700,color:"#000",letterSpacing:2}}>⚡ ATIVO</span>																									
+<span style={{fontSize:9,color:"#000",fontWeight:700}}>{d.tipo==="km"?"📏 KM":d.tipo==="cal"?"🔥 CAL":d.tipo==="tempo"?"⏱️ TEMPO":"📅 DIAS"}</span>																									
 </div>																									
 <div style={{padding:14}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:BRANCO,letterSpacing:1,marginBottom:3}}>{d.nome}</div>																									
-<div style={{fontSize:10,color:CINZA,marginBottom:12}}>{d.inicio&&d.fim?`${d.inicio} até ${d.fim}`:d.descricao}</div>																									
+{d.modalidades&&<div style={{fontSize:10,color:STRAVA,marginBottom:6}}>{modalidadeLabel(d.modalidades)}</div>}																									
+<div style={{fontSize:10,color:CINZA,marginBottom:10}}>{d.inicio&&d.fim?`${d.inicio} até ${d.fim}`:d.descricao}</div>																									
 {d.meta&&<>																									
 <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>																									
 <span style={{fontSize:11,color:BRANCO,fontWeight:600}}>{s.total.toFixed(1)} {unidade(d)}</span>																									
@@ -535,8 +502,6 @@ return(
 );																									
 })}																									
 </>}																									
-																									
-{/* HISTÓRICO */}																									
 {inativos.length>0&&<>																									
 <div style={{fontSize:10,color:CINZA,letterSpacing:2,marginBottom:8,marginTop:ativos.length>0?8:0}}>📁 HISTÓRICO</div>																									
 {inativos.map((d,i)=>{																									
@@ -550,19 +515,11 @@ return(
 </div>																									
 <div style={{padding:14}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:CINZA,letterSpacing:1,marginBottom:3}}>{d.nome}</div>																									
+{d.modalidades&&<div style={{fontSize:10,color:"#555",marginBottom:6}}>{modalidadeLabel(d.modalidades)}</div>}																									
 <div style={{fontSize:10,color:"#555",marginBottom:10}}>{d.inicio&&d.fim?`${d.inicio} até ${d.fim}`:d.descricao}</div>																									
 {s.pos>0&&<div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:700,marginBottom:10,background:s.pos===1?"rgba(201,168,76,0.15)":s.pos===2?"rgba(160,160,160,0.1)":"rgba(180,100,60,0.1)",color:s.pos===1?DOURADO:s.pos===2?CINZA:"#b4643c",border:`1px solid ${s.pos===1?DOURADO:s.pos===2?CINZA:"#b4643c"}`}}>																									
 {medals[s.pos-1]||`#${s.pos}`} {s.pos}º LUGAR																									
 </div>}																									
-{d.meta&&<>																									
-<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>																									
-<span style={{fontSize:11,color:"#555",fontWeight:600}}>{s.total.toFixed(1)} {unidade(d)}</span>																									
-<span style={{fontSize:11,color:metaBatida?VERDE:"#555",fontWeight:700}}>{metaBatida?"✓ META BATIDA":`${s.pct}%`}</span>																									
-</div>																									
-<div style={{background:BORDA,borderRadius:4,height:6,overflow:"hidden",marginBottom:10}}>																									
-<div style={{height:"100%",width:`${Math.min(100,s.pct)}%`,background:metaBatida?VERDE:"#444",borderRadius:4}}/>																									
-</div>																									
-</>}																									
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>																									
 {[[s.total.toFixed(1),unidade(d).toUpperCase()],[s.qtd,"ATIVID."],[s.pos>0?`#${s.pos}`:"—","POSIÇÃO"]].map(([v,l],j)=>(																									
 <div key={j} style={{background:"#111",borderRadius:8,padding:"8px",textAlign:"center"}}>																									
@@ -576,13 +533,11 @@ return(
 );																									
 })}																									
 </>}																									
-																									
 {desafios.length===0&&<div style={{textAlign:"center",padding:40,color:CINZA,fontSize:13}}>Nenhum desafio ainda</div>}																									
 </div>																									
 );																									
 }																									
 																									
-// ── PERFIL ────────────────────────────────────────────────────																									
 function TelaPerfil({usuario,atividades,onSair,stravaToken,conectarStrava,desconectarStrava}){																									
 const totalKm=atividades.filter(a=>a.usuario_id===usuario.id).reduce((a,r)=>a+(parseFloat(r.km)||0),0);																									
 const qtdAtivs=atividades.filter(a=>a.usuario_id===usuario.id).length;																									
@@ -617,7 +572,6 @@ return(
 );																									
 }																									
 																									
-// ── MODAL REGISTRAR ───────────────────────────────────────────																									
 function ModalRegistrar({desafio,usuario,onSalvar,onFechar}){																									
 const [val,setVal]=useState("");																									
 const [loading,setLoading]=useState(false);																									
@@ -627,7 +581,7 @@ if(!val)return;
 setLoading(true);setErro("");																									
 try{																									
 const token=await getAccessToken();																									
-await escreverAba(token,"atividades",[[Date.now().toString(),usuario.id,usuario.nome,desafio.id||desafio.nome,desafio.nome,val,new Date().toLocaleDateString("pt-BR"),"manual"]]);																									
+await escreverAba(token,"atividades",[[Date.now().toString(),usuario.id,usuario.nome,desafio.id||desafio.nome,desafio.nome,val,new Date().toLocaleDateString("pt-BR"),"manual","manual"]]);																									
 onSalvar();																									
 }catch(e){setErro("Erro: "+e.message);}																									
 setLoading(false);																									
@@ -650,7 +604,6 @@ return(
 );																									
 }																									
 																									
-// ── PAINEL ORGANIZADOR ────────────────────────────────────────																									
 function PainelOrganizador({usuario,desafios,atividades,usuarios,onCriarDesafio,onEditarDesafio}){																									
 const [abaP,setAbaP]=useState("desafios");																									
 const totalKm=atividades.reduce((a,r)=>a+(parseFloat(r.km)||0),0);																									
@@ -685,7 +638,8 @@ return(
 </div>																									
 <div style={{padding:"12px 14px"}}>																									
 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:BRANCO,letterSpacing:1,marginBottom:3}}>{d.nome}</div>																									
-<div style={{fontSize:11,color:CINZA,marginBottom:8}}>{d.descricao}</div>																									
+<div style={{fontSize:11,color:CINZA,marginBottom:6}}>{d.descricao}</div>																									
+{d.modalidades&&<div style={{fontSize:10,color:STRAVA,marginBottom:8}}>{modalidadeLabel(d.modalidades)}</div>}																									
 <span style={{padding:"3px 8px",borderRadius:20,fontSize:10,background:"rgba(201,168,76,0.15)",color:DOURADO}}>{d.tipo==="km"?"📏 Distância":d.tipo==="cal"?"🔥 Calorias":d.tipo==="tempo"?"⏱️ Tempo":"📅 Frequência"}</span>																									
 </div>																									
 </div>																									
@@ -748,19 +702,22 @@ return(
 );																									
 }																									
 																									
-// ── CRIAR/EDITAR DESAFIO ──────────────────────────────────────																									
 function TelaDesafioForm({desafioEditando,onSalvar,onVoltar}){																									
+const modIniciais=desafioEditando?.modalidades?desafioEditando.modalidades.split(","):["Run"];																									
 const [form,setForm]=useState(desafioEditando||{nome:"",descricao:"",tipo:"km",meta:"",inicio:"",fim:"",ativo:"true"});																									
+const [modSel,setModSel]=useState(modIniciais);																									
 const [loading,setLoading]=useState(false);																									
 const [erro,setErro]=useState("");																									
 const set=(k,v)=>setForm(p=>({...p,[k]:v}));																									
+const toggleMod=(strava)=>setModSel(prev=>prev.includes(strava)?prev.filter(m=>m!==strava):[...prev,strava]);																									
 const salvar=async()=>{																									
-if(!form.nome)return;																									
+if(!form.nome){setErro("Preencha o nome");return;}																									
+if(modSel.length===0){setErro("Selecione pelo menos uma modalidade");return;}																									
 setLoading(true);setErro("");																									
 try{																									
 const token=await getAccessToken();																									
 const id=desafioEditando?desafioEditando.id:Date.now().toString();																									
-await escreverAba(token,"desafios",[[id,form.nome,form.descricao||"",form.tipo||"km",form.meta||"",form.ativo||"true",form.inicio||"",form.fim||""]]);																									
+await escreverAba(token,"desafios",[[id,form.nome,form.descricao||"",form.tipo||"km",form.meta||"",form.ativo||"true",form.inicio||"",form.fim||"",modSel.join(",")]]);																									
 onSalvar();																									
 }catch(e){setErro("Erro: "+e.message);setLoading(false);}																									
 setLoading(false);																									
@@ -776,15 +733,29 @@ return(
 </div>																									
 <label style={lS}>NOME</label><input value={form.nome} onChange={e=>set("nome",e.target.value)} placeholder="Ex: 100km Julho 🏃" style={iS}/>																									
 <label style={lS}>DESCRIÇÃO</label><input value={form.descricao} onChange={e=>set("descricao",e.target.value)} placeholder="Descreva o desafio" style={iS}/>																									
-<label style={lS}>TIPO</label>																									
+<label style={lS}>TIPO DE MÉTRICA</label>																									
 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>																									
-{[["km","📏 Distância (km)","Quem correr mais km"],["cal","🔥 Calorias","Quem queimar mais cal"],["tempo","⏱️ Tempo","Quem correr por mais tempo"],["dias","📅 Frequência","Quem correr mais dias"]].map(([val,nome,desc])=>(																									
+{[["km","📏 Distância (km)","Quem acumular mais km"],["cal","🔥 Calorias","Quem queimar mais cal"],["tempo","⏱️ Tempo","Quem correr por mais tempo"],["dias","📅 Frequência","Quem correr mais dias"]].map(([val,nome,desc])=>(																									
 <button key={val} onClick={()=>set("tipo",val)} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${form.tipo===val?DOURADO:BORDA}`,background:form.tipo===val?"rgba(201,168,76,0.1)":"transparent",color:BRANCO,fontSize:13,cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>																									
 <div><div style={{fontWeight:500}}>{nome}</div><div style={{fontSize:10,color:CINZA,marginTop:2}}>{desc}</div></div>																									
 {form.tipo===val&&<span style={{color:DOURADO}}>✓</span>}																									
 </button>																									
 ))}																									
 </div>																									
+<label style={lS}>MODALIDADES QUE CONTAM <span style={{color:STRAVA,fontWeight:400}}>· via Strava</span></label>																									
+<div style={{fontSize:10,color:CINZA,marginBottom:10}}>Selecione as atividades que serão importadas do Strava</div>																									
+<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>																									
+{MODALIDADES.map(m=>{																									
+const sel=modSel.includes(m.strava);																									
+return(																									
+<button key={m.strava} onClick={()=>toggleMod(m.strava)} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${sel?STRAVA:BORDA}`,background:sel?"rgba(252,76,2,0.08)":"transparent",color:BRANCO,fontSize:13,cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>																									
+<span>{m.emoji} {m.pt}</span>																									
+<span style={{color:sel?STRAVA:BORDA,fontSize:16}}>{sel?"✓":"○"}</span>																									
+</button>																									
+);																									
+})}																									
+</div>																									
+{modSel.length===0&&<div style={{color:VERMELHO,fontSize:11,marginBottom:10,textAlign:"center"}}>Selecione pelo menos uma modalidade</div>}																									
 <label style={lS}>META</label>																									
 <input value={form.meta} onChange={e=>set("meta",e.target.value)} placeholder={form.tipo==="km"?"Ex: 100":form.tipo==="cal"?"Ex: 10000":form.tipo==="tempo"?"Ex: 600":"Ex: 20"} style={iS}/>																									
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>																									
@@ -798,12 +769,11 @@ return(
 ))}																									
 </div>																									
 {erro&&<div style={{color:VERMELHO,fontSize:12,marginBottom:14,textAlign:"center",background:"rgba(192,96,64,0.1)",padding:"10px",borderRadius:8}}>{erro}</div>}																									
-<button onClick={salvar} disabled={!form.nome||loading} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer",opacity:form.nome?1:0.5}}>{loading?"SALVANDO...":"SALVAR DESAFIO ✓"}</button>																									
+<button onClick={salvar} disabled={!form.nome||loading||modSel.length===0} style={{width:"100%",background:DOURADO,color:"#000",border:"none",borderRadius:10,padding:15,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,cursor:"pointer",opacity:form.nome&&modSel.length>0?1:0.5}}>{loading?"SALVANDO...":"SALVAR DESAFIO ✓"}</button>																									
 </div>																									
 );																									
 }																									
 																									
-// ── NAV ───────────────────────────────────────────────────────																									
 function NavInferior({aba,setAba,isOrganizador}){																									
 const itens=[																									
 {id:"home",icon:"🏠",label:"Home"},																									
@@ -824,7 +794,6 @@ return(
 );																									
 }																									
 																									
-// ── APP ───────────────────────────────────────────────────────																									
 export default function App(){																									
 const [tela,setTela]=useState("login");																									
 const [usuario,setUsuario]=useState(null);																									
@@ -845,8 +814,8 @@ setLoading(true);
 try{																									
 const token=await getAccessToken();																									
 const [rD,rA,rU]=await Promise.all([lerAba(token,"desafios"),lerAba(token,"atividades"),lerAba(token,"usuarios")]);																									
-setDesafios(rD.slice(1).filter(r=>r[0]).map(r=>({id:r[0],nome:r[1],descricao:r[2],tipo:r[3]||"km",meta:r[4],ativo:r[5],inicio:r[6],fim:r[7]})));																									
-setAtividades(rA.slice(1).filter(r=>r[0]).map(r=>({id:r[0],usuario_id:r[1],usuario_nome:r[2],desafio_id:r[3],desafio_nome:r[4],km:r[5],data:r[6],fonte:r[7]||"manual"})));																									
+setDesafios(rD.slice(1).filter(r=>r[0]).map(r=>({id:r[0],nome:r[1],descricao:r[2],tipo:r[3]||"km",meta:r[4],ativo:r[5],inicio:r[6],fim:r[7],modalidades:r[8]||"Run"})));																									
+setAtividades(rA.slice(1).filter(r=>r[0]).map(r=>({id:r[0],usuario_id:r[1],usuario_nome:r[2],desafio_id:r[3],desafio_nome:r[4],km:r[5],data:r[6],fonte:r[7]||"manual",tipo_atividade:r[8]||""})));																									
 setUsuarios(rU.slice(1).filter(r=>r[0]).map(r=>({id:r[0],nome:r[1],email:r[2],nivel:r[5]||"Iniciante",sexo:r[6]||"",vinculo:r[7]||"Externo"})));																									
 }catch(e){console.error(e);}																									
 setLoading(false);																									
@@ -862,13 +831,16 @@ const res=await fetch("/api/strava",{method:"POST",headers:{"Content-Type":"appl
 const data=await res.json();																									
 if(Array.isArray(data)&&data.length>0){																									
 const desafiosAtivos=desafios.filter(d=>d.ativo==="true");																									
-if(desafiosAtivos.length===0){setSincMsg(`${data.length} atividade(s) encontrada(s), sem desafios ativos.`);setSincronizando(false);return;}																									
+if(desafiosAtivos.length===0){setSincMsg(`${data.length} atividade(s), sem desafios ativos.`);setSincronizando(false);return;}																									
 const token=await getAccessToken();																									
 const jaRegistradas=await lerAba(token,"atividades");																									
 const idsExistentes=new Set(jaRegistradas.slice(1).map(r=>r[0]));																									
 let novas=0;																									
 for(const ativ of data){																									
+const tipoStrava=ativ.sport_type||ativ.type||"";																									
 for(const desafio of desafiosAtivos){																									
+const modalidades=(desafio.modalidades||"Run").split(",").map(m=>m.trim());																									
+if(!modalidades.includes(tipoStrava))continue;																									
 const idAtiv=`strava_${ativ.id}_${desafio.id}`;																									
 if(idsExistentes.has(idAtiv))continue;																									
 const dataInicio=desafio.inicio?new Date(desafio.inicio):null;																									
@@ -879,13 +851,13 @@ const cal=Math.round((ativ.kilojoules||0)*0.239);
 const tempo=Math.round((ativ.moving_time||0)/60);																									
 const valor=desafio.tipo==="cal"?cal:desafio.tipo==="tempo"?tempo:km;																									
 const dataFmt=dataAtiv.toLocaleDateString("pt-BR");																									
-await escreverAba(token,"atividades",[[idAtiv,usuario.id,usuario.nome,desafio.id,desafio.nome,valor,dataFmt,"strava"]]);																									
+await escreverAba(token,"atividades",[[idAtiv,usuario.id,usuario.nome,desafio.id,desafio.nome,valor,dataFmt,"strava",tipoStrava]]);																									
 novas++;																									
 }																									
 }																									
 setSincMsg(novas>0?`✓ ${novas} atividade(s) importada(s)!`:"Nenhuma atividade nova.");																									
 if(novas>0)await carregarDados();																									
-}else if(Array.isArray(data)&&data.length===0){																									
+}else if(Array.isArray(data)){																									
 setSincMsg("Nenhuma atividade no Strava.");																									
 }else{																									
 setSincMsg("Resp: "+JSON.stringify(data).slice(0,80));																									
@@ -923,6 +895,34 @@ return(
 </div></>																									
 );																									
 }																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
+																									
 																									
 																									
 																									
